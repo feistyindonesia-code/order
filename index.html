@@ -333,8 +333,30 @@ function submitOrder() {
     return;
   }
 
-  document.getElementById('modal').style.display = 'flex';
+  fetch(API_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      nama: document.getElementById('nama').value,
+      whatsapp: document.getElementById('wa').value,
+      metode: document.getElementById('metode').value,
+      items: items,
+      total: items.reduce((t, i) => t + i.qty * i.harga, 0)
+    })
+  })
+  .then(res => res.json())
+  .then(res => {
+    if (res.status === 'success') {
+      document.getElementById('modal').style.display = 'flex';
+    } else {
+      alert('Gagal menyimpan order');
+    }
+  })
+  .catch(err => alert('Error: ' + err));
 }
+
 
 function closeModal() {
   document.getElementById('modal').style.display = 'none';
