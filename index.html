@@ -2,274 +2,160 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Feisty Order</title>
-
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
 
 <style>
 :root{
-  --bg:#f7f7f7;
-  --card:#ffffff;
-  --text:#111;
-  --muted:#666;
-  --accent:#ff7a00;
+  --bg:#fff;--card:#f3f3f3;--text:#111;
+  --accent:#ff4d00;
 }
-body.dark{
-  --bg:#0f0f0f;
-  --card:#1a1a1a;
-  --text:#f5f5f5;
-  --muted:#9ca3af;
+.dark{
+  --bg:#0e0e0e;--card:#1b1b1b;--text:#fff;
 }
-*{box-sizing:border-box;margin:0;padding:0}
 body{
-  font-family:Poppins,sans-serif;
-  background:var(--bg);
-  color:var(--text);
+  margin:0;font-family:Inter,system-ui;
+  background:var(--bg);color:var(--text);
 }
 header{
-  padding:16px;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  border-bottom:1px solid #ddd;
+  padding:1rem;text-align:center;
 }
-.logo{font-weight:700;font-size:1.2rem}
-nav a{margin-left:12px;color:var(--muted);text-decoration:none;font-size:.9rem}
-
-section{padding:20px}
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
+  gap:1rem;padding:1rem;
+}
 .card{
   background:var(--card);
   border-radius:14px;
-  padding:16px;
-  margin-bottom:16px;
+  padding:1rem;
 }
-.hero{text-align:center}
-.hero h1{font-size:2rem}
-
-label{font-size:.8rem;color:var(--muted)}
-input,select{
-  width:100%;
-  padding:12px;
-  border-radius:10px;
-  border:none;
-  background:#eee;
+.card img{
+  width:100%;height:120px;
+  object-fit:cover;border-radius:10px;
 }
-body.dark input,body.dark select{background:#111;color:#fff}
-
-.menu-grid{
-  display:grid;
-  grid-template-columns:repeat(2,1fr);
-  gap:12px;
+.qty{
+  display:flex;gap:.5rem;
+  justify-content:center;
 }
-@media(min-width:768px){
-  .menu-grid{grid-template-columns:repeat(3,1fr)}
-}
-.menu-item img{
-  width:100%;
-  height:120px;
-  object-fit:cover;
-  border-radius:10px;
-  margin-bottom:8px;
-}
-.badge{
-  font-size:.7rem;
-  background:#222;
-  color:#fff;
-  padding:4px 8px;
+button{
+  background:var(--accent);
+  border:none;color:#fff;
+  padding:.4rem .7rem;
   border-radius:6px;
 }
-.price{font-weight:600;margin-top:6px}
-.qty{
-  display:flex;
-  align-items:center;
-  margin-top:8px;
+.fixed{
+  position:fixed;bottom:0;left:0;right:0;
+  background:var(--card);
+  padding:1rem;
 }
-.qty button{
-  width:32px;
-  height:32px;
-  border:none;
-  border-radius:8px;
-  background:#333;
-  color:#fff;
-  font-size:1.1rem;
-}
-.qty span{margin:0 10px}
-
-.summary ul{list-style:none;font-size:.9rem}
-.summary li{display:flex;justify-content:space-between;margin-bottom:6px}
-.total{border-top:1px solid #ccc;padding-top:8px;font-weight:700}
-
-.btn{
-  background:linear-gradient(135deg,#ff7a00,#ff3d3d);
-  border:none;
-  color:#fff;
-  width:100%;
-  padding:14px;
-  border-radius:10px;
-  font-size:1rem;
-}
-
-.modal{
-  position:fixed;
-  inset:0;
-  display:none;
-  background:rgba(0,0,0,.7);
-  justify-content:center;
-  align-items:center;
-}
-.modal .card{text-align:center}
-footer{text-align:center;font-size:.8rem;color:var(--muted);padding:20px}
 </style>
 </head>
 
 <body>
-
 <header>
-  <div class="logo">🔥 Feisty</div>
-  <nav>
-    <a href="#menu">Menu</a>
-    <a href="#pay">Bayar</a>
-  </nav>
+<h2>🔥 Feisty</h2>
+<p>Order Mudah & Cepat</p>
 </header>
 
-<section class="hero">
-  <h1>Order Online</h1>
-  <p>Pesan cepat tanpa antre</p>
-</section>
+<section class="grid" id="menu"></section>
 
-<section class="card">
-  <label>Nama</label>
-  <input id="nama" readonly>
-  <label style="margin-top:8px">WhatsApp</label>
-  <input id="wa" readonly>
-</section>
-
-<section id="menu">
-  <h2>Menu</h2>
-  <div class="menu-grid" id="menuList"></div>
-</section>
-
-<section class="card summary" id="pay">
-  <h2>Ringkasan</h2>
-  <ul id="summaryList"></ul>
-  <div class="total" id="totalHarga">Total: Rp 0</div>
-</section>
-
-<section class="card">
-  <h2>Pembayaran</h2>
-  <select id="metode">
-    <option value="QRIS">QRIS</option>
-    <option value="COD">Tunai / COD</option>
-  </select>
-</section>
-
-<section>
-  <button class="btn" onclick="submitOrder()">Bayar Sekarang</button>
-</section>
-
-<div class="modal" id="modal">
-  <div class="card">
-    <h3>Order Berhasil</h3>
-    <p>Pesanan telah dikirim</p>
-    <button class="btn" onclick="closeModal()">Tutup</button>
-  </div>
+<div class="fixed">
+<select id="metode">
+  <option value="QRIS">QRIS</option>
+  <option value="COD">Tunai / COD</option>
+</select>
+<button onclick="submitOrder()">Bayar</button>
+<span id="total">Rp0</span>
 </div>
 
-<footer>© Feisty Indonesia</footer>
-
 <script>
-/* ========= AUTO THEME ========= */
-const h = new Date().getHours();
-if(h >= 18 || h < 6) document.body.classList.add('dark');
+/* ===============================
+   CONFIG
+================================ */
+const API = 'PASTE_URL_DEPLOY_GAS';
 
-/* ========= CONFIG ========= */
-const API = 'https://script.google.com/macros/s/AKfycbzlY5zc9gPeKS-vdSPzQrWxIc7elRvSnPiQSgDReQyzsthBth6rdNrT1jLAWWpf3FpS9A/exec';
+/* ===============================
+   AUTO THEME
+================================ */
+const hour = new Date().getHours();
+if(hour >= 18 || hour < 6) document.body.classList.add('dark');
 
-const menuList = document.getElementById('menuList');
-const summaryList = document.getElementById('summaryList');
-const totalHarga = document.getElementById('totalHarga');
-let menuData = [];
-const cart = {};
+/* ===============================
+   URL PARAM
+================================ */
+const p = new URLSearchParams(location.search);
+const nama = p.get('nama') || '';
+const wa = p.get('wa') || '';
 
-/* ========= AUTO FILL TEST ========= */
-const q = new URLSearchParams(location.search);
-document.getElementById('nama').value = q.get('nama') || 'Test User';
-document.getElementById('wa').value = q.get('wa') || '08123456789';
+let cart = {};
 
-/* ========= LOAD MENU ========= */
-fetch(API)
-  .then(r=>r.json())
-  .then(d=>{
-    menuData=d;
-    renderMenu();
-  });
+/* ===============================
+   LOAD MENU
+================================ */
+fetch(API+'?action=menu')
+.then(r=>r.json())
+.then(data=>{
+  document.getElementById('menu').innerHTML = data.map(i=>`
+    <div class="card">
+      ${i.gambar
+        ? `<img src="${i.gambar}">`
+        : `<div style="height:120px;background:#222;border-radius:10px"></div>`
+      }
+      <h4>${i.nama}</h4>
+      <small>${i.deskripsi}</small>
+      <p>Rp${i.harga}</p>
+      <div class="qty">
+        <button onclick="add('${i.id}',${i.harga})">+</button>
+        <span id="q${i.id}">0</span>
+        <button onclick="remove('${i.id}',${i.harga})">-</button>
+      </div>
+    </div>
+  `).join('');
+});
 
-function renderMenu(){
-  menuList.innerHTML='';
-  menuData.forEach(i=>{
-    cart[i.id]=0;
-    menuList.innerHTML+=`
-      <div class="card menu-item">
-        <img src="${i.gambar || 'https://via.placeholder.com/300x200'}">
-        <span class="badge">${i.kategori}</span>
-        <h3>${i.nama}</h3>
-        <p>${i.deskripsi}</p>
-        <div class="price">Rp ${i.harga.toLocaleString('id-ID')}</div>
-        <div class="qty">
-          <button onclick="updateQty(${i.id},-1)">-</button>
-          <span id="q${i.id}">0</span>
-          <button onclick="updateQty(${i.id},1)">+</button>
-        </div>
-      </div>`;
-  });
-}
-
-function updateQty(id,c){
-  cart[id]=Math.max(0,cart[id]+c);
+/* ===============================
+   CART
+================================ */
+function add(id,h){
+  cart[id]=(cart[id]||0)+1;
   document.getElementById('q'+id).innerText=cart[id];
-  renderSummary();
+  total();
 }
-
-function renderSummary(){
-  summaryList.innerHTML='';
-  let total=0;
-  menuData.forEach(i=>{
-    if(cart[i.id]>0){
-      const sub=cart[i.id]*i.harga;
-      total+=sub;
-      summaryList.innerHTML+=`
-        <li><span>${i.nama} x${cart[i.id]}</span>
-        <span>Rp ${sub.toLocaleString('id-ID')}</span></li>`;
-    }
+function remove(id,h){
+  if(cart[id]>0) cart[id]--;
+  document.getElementById('q'+id).innerText=cart[id]||0;
+  total();
+}
+function total(){
+  let t=0;
+  document.querySelectorAll('.card').forEach(c=>{
+    const id=c.querySelector('button').getAttribute('onclick').match(/'(.+?)'/)[1];
   });
-  if(!total) summaryList.innerHTML='<li>Belum ada pesanan</li>';
-  totalHarga.innerText='Total: Rp '+total.toLocaleString('id-ID');
+  for(let i in cart) t+=cart[i]*1;
+  document.getElementById('total').innerText='Rp'+t;
 }
 
-/* ========= SUBMIT ========= */
+/* ===============================
+   SUBMIT
+================================ */
 function submitOrder(){
-  const items=menuData.filter(i=>cart[i.id]>0).map(i=>({
-    id:i.id,nama:i.nama,qty:cart[i.id],harga:i.harga
-  }));
-  if(!items.length) return alert('Pilih menu');
+  const items = Object.keys(cart).map(id=>({id,qty:cart[id]}));
+  const metode = document.getElementById('metode').value;
 
   fetch(API,{
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({
-      nama:nama.value,
-      whatsapp:wa.value,
-      metode:metode.value,
-      items,
-      total:items.reduce((t,i)=>t+i.qty*i.harga,0)
+      nama,wa,metode,
+      items,total:Object.values(cart).reduce((a,b)=>a+b,0)
     })
   })
-  .then(()=>modal.style.display='flex');
+  .then(r=>r.json())
+  .then(res=>{
+    alert('Order dibuat: '+res.order_id);
+  });
 }
-
-function closeModal(){modal.style.display='none'}
 </script>
-
 </body>
 </html>
