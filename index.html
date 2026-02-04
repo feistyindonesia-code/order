@@ -4,7 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Feisty - Order Online</title>
+
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+
   <style>
     :root {
       --bg-dark: #0f0f0f;
@@ -14,13 +16,15 @@
       --accent-orange: #ff7a00;
       --accent-red: #ff3d3d;
     }
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
+
     body {
       font-family: 'Poppins', sans-serif;
       background: var(--bg-dark);
       color: var(--text-light);
-      line-height: 1.6;
     }
+
     header {
       padding: 16px;
       display: flex;
@@ -28,26 +32,22 @@
       align-items: center;
       border-bottom: 1px solid #222;
     }
+
     .logo { font-weight: 700; font-size: 1.2rem; }
-    nav a { margin-left: 12px; font-size: 0.9rem; color: var(--text-muted); }
 
-    .hero { padding: 32px 16px; text-align: center; }
-    .hero h1 { font-size: 2rem; margin-bottom: 8px; }
-    .hero p { color: var(--text-muted); }
-
-    .btn-primary {
-      margin-top: 16px;
-      background: linear-gradient(135deg, var(--accent-orange), var(--accent-red));
-      border: none;
-      color: #fff;
-      padding: 14px 24px;
-      font-size: 1rem;
-      border-radius: 10px;
-      cursor: pointer;
-      width: 100%;
+    nav a {
+      margin-left: 12px;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      text-decoration: none;
     }
 
     section { padding: 24px 16px; }
+
+    .hero { text-align: center; }
+    .hero h1 { font-size: 2rem; margin-bottom: 6px; }
+    .hero p { color: var(--text-muted); }
+
     .card {
       background: var(--bg-card);
       border-radius: 14px;
@@ -56,6 +56,7 @@
     }
 
     label { font-size: 0.8rem; color: var(--text-muted); }
+
     input {
       width: 100%;
       margin-top: 4px;
@@ -73,45 +74,110 @@
     }
 
     @media (min-width: 768px) {
-      .menu-grid {
-        grid-template-columns: repeat(3, 1fr);
-      }
+      .menu-grid { grid-template-columns: repeat(3, 1fr); }
     }
-    .menu-item h3 { margin-bottom: 4px; }
-    .menu-item p { font-size: 0.85rem; color: var(--text-muted); }
-    .price { margin-top: 6px; font-weight: 600; }
-    .badge { font-size: 0.7rem; padding: 4px 8px; background: #222; border-radius: 6px; display: inline-block; margin-bottom: 6px; }
 
-    .qty { display: flex; align-items: center; margin-top: 10px; }
-    .qty button {
-      width: 32px; height: 32px; border-radius: 8px; border: none;
-      background: #222; color: #fff; font-size: 1.1rem; cursor: pointer;
+    .menu-item h3 { font-size: 0.95rem; }
+    .menu-item p { font-size: 0.75rem; color: var(--text-muted); }
+
+    .badge {
+      font-size: 0.7rem;
+      padding: 4px 8px;
+      background: #222;
+      border-radius: 6px;
+      display: inline-block;
+      margin-bottom: 6px;
     }
+
+    .price { font-weight: 600; margin-top: 6px; }
+
+    .qty {
+      display: flex;
+      align-items: center;
+      margin-top: 10px;
+    }
+
+    .qty button {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      border: none;
+      background: #222;
+      color: #fff;
+      font-size: 1.1rem;
+      cursor: pointer;
+    }
+
     .qty span { margin: 0 12px; }
 
     .summary ul { list-style: none; font-size: 0.9rem; }
-    .summary li { display: flex; justify-content: space-between; margin-bottom: 6px; }
-    .total { border-top: 1px solid #333; padding-top: 8px; font-weight: 700; }
+    .summary li {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+
+    .total {
+      border-top: 1px solid #333;
+      padding-top: 8px;
+      font-weight: 700;
+    }
 
     select {
-      width: 100%; padding: 12px; border-radius: 10px; border: none;
-      background: #111; color: #fff; margin-top: 8px;
+      width: 100%;
+      padding: 12px;
+      border-radius: 10px;
+      border: none;
+      background: #111;
+      color: #fff;
+      margin-top: 8px;
     }
 
     .qris-box {
-      margin-top: 12px; padding: 16px; border: 1px dashed #333;
-      border-radius: 12px; text-align: center; color: var(--text-muted);
+      margin-top: 12px;
+      padding: 16px;
+      border: 1px dashed #333;
+      border-radius: 12px;
+      text-align: center;
+      color: var(--text-muted);
     }
 
-    footer { text-align: center; padding: 24px 16px; font-size: 0.8rem; color: var(--text-muted); }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent-orange), var(--accent-red));
+      border: none;
+      color: #fff;
+      padding: 14px;
+      font-size: 1rem;
+      border-radius: 10px;
+      width: 100%;
+      cursor: pointer;
+    }
+
+    footer {
+      text-align: center;
+      padding: 24px 16px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
 
     .modal {
-      position: fixed; inset: 0; background: rgba(0,0,0,0.7);
-      display: none; justify-content: center; align-items: center;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      display: none;
+      justify-content: center;
+      align-items: center;
     }
-    .modal-content { background: var(--bg-card); padding: 24px; border-radius: 16px; text-align: center; }
+
+    .modal-content {
+      background: var(--bg-card);
+      padding: 24px;
+      border-radius: 16px;
+      text-align: center;
+    }
   </style>
 </head>
+
 <body>
 
 <header>
@@ -126,14 +192,15 @@
 <section class="hero">
   <h1>Order Online Feisty</h1>
   <p>Pesan langsung dari WhatsApp, tanpa antre</p>
-  <small>Nama & WhatsApp otomatis terisi</small>
 </section>
 
 <section id="order" class="card">
   <label>Nama</label>
   <input id="nama" readonly>
+
   <label style="margin-top:10px">Nomor WhatsApp</label>
   <input id="wa" readonly>
+
   <small style="color:#777">Data ini diambil otomatis dari WhatsApp</small>
 </section>
 
@@ -148,13 +215,13 @@
   <div class="total" id="totalHarga">Total: Rp 0</div>
 </section>
 
-<section class="card payment">
+<section class="card">
   <h2>Metode Pembayaran</h2>
   <select id="metode">
     <option value="QRIS">QRIS</option>
     <option value="COD">Tunai / COD</option>
   </select>
-  <div class="qris-box" id="qrisBox">Scan QRIS untuk pembayaran</div>
+  <div class="qris-box">Scan QRIS untuk pembayaran</div>
 </section>
 
 <section style="padding:0 16px 32px">
@@ -174,44 +241,55 @@
 </footer>
 
 <script>
+/* ================= CONFIG ================= */
 const API_URL = 'https://script.google.com/macros/s/AKfycbwuo8GsjqQASnyLZqgX82yo-y4WR7q28lh6vZeAWZnByjDxsBsTwgeTIRruY0DEWnbeLQ/exec';
+
 const menuList = document.getElementById('menuList');
 const summaryList = document.getElementById('summaryList');
 const totalHarga = document.getElementById('totalHarga');
-const cart = {};
-let menuData = [];
 
+let menuData = [];
+const cart = {};
+
+/* ================= AUTO FILL FROM URL ================= */
 const params = new URLSearchParams(window.location.search);
 document.getElementById('nama').value = params.get('nama') || '';
 document.getElementById('wa').value = params.get('wa') || '';
 
-fetch(API_URL + '?action=menu')
+/* ================= LOAD MENU ================= */
+fetch(API_URL)
   .then(res => res.json())
   .then(data => {
     menuData = data;
     renderMenu();
-  });
+  })
+  .catch(err => console.error('Gagal load menu:', err));
 
 function renderMenu() {
   menuList.innerHTML = '';
   menuData.forEach(item => {
     cart[item.id] = 0;
     menuList.innerHTML += `
-      <div class=\"card menu-item\">
-        <div style=\"background:#000;border-radius:10px;height:90px;margin-bottom:8px;display:flex;align-items:center;justify-content:center;color:#444;font-size:0.75rem;\">Foto Menu</div>
-        <span class=\"badge\">${item.kategori}</span>
-        <h3 style=\"font-size:0.95rem\">${item.nama}</h3>
-        <p style=\"font-size:0.75rem\">${item.deskripsi}</p>
-        <div class=\"price\">Rp ${item.harga.toLocaleString('id-ID')}</div>
-        <div class=\"qty\">
-          <button onclick=\"updateQty(${item.id}, -1)\">-</button>
-          <span id=\"qty-${item.id}\">0</span>
-          <button onclick=\"updateQty(${item.id}, 1)\">+</button>
+      <div class="card menu-item">
+        <div style="height:90px;background:#000;border-radius:10px;margin-bottom:8px;
+          display:flex;align-items:center;justify-content:center;color:#444;font-size:0.75rem;">
+          Foto Menu
         </div>
-      </div>`;
+        <span class="badge">${item.kategori}</span>
+        <h3>${item.nama}</h3>
+        <p>${item.deskripsi}</p>
+        <div class="price">Rp ${item.harga.toLocaleString('id-ID')}</div>
+        <div class="qty">
+          <button onclick="updateQty(${item.id}, -1)">-</button>
+          <span id="qty-${item.id}">0</span>
+          <button onclick="updateQty(${item.id}, 1)">+</button>
+        </div>
+      </div>
+    `;
   });
 }
 
+/* ================= CART ================= */
 function updateQty(id, change) {
   cart[id] = Math.max(0, cart[id] + change);
   document.getElementById(`qty-${id}`).innerText = cart[id];
@@ -224,9 +302,14 @@ function renderSummary() {
 
   menuData.forEach(item => {
     if (cart[item.id] > 0) {
-      const subtotal = cart[item.id] * item.harga;
-      total += subtotal;
-      summaryList.innerHTML += `<li><span>${item.nama} x${cart[item.id]}</span><span>Rp ${subtotal.toLocaleString('id-ID')}</span></li>`;
+      const sub = cart[item.id] * item.harga;
+      total += sub;
+      summaryList.innerHTML += `
+        <li>
+          <span>${item.nama} x${cart[item.id]}</span>
+          <span>Rp ${sub.toLocaleString('id-ID')}</span>
+        </li>
+      `;
     }
   });
 
@@ -234,36 +317,28 @@ function renderSummary() {
   totalHarga.innerText = 'Total: Rp ' + total.toLocaleString('id-ID');
 }
 
+/* ================= SUBMIT ================= */
 function submitOrder() {
-  const items = menuData.filter(i => cart[i.id] > 0).map(i => ({ id: i.id, nama: i.nama, qty: cart[i.id], harga: i.harga }));
-  if (!items.length) return alert('Pilih menu terlebih dahulu');
+  const items = menuData
+    .filter(i => cart[i.id] > 0)
+    .map(i => ({
+      id: i.id,
+      nama: i.nama,
+      qty: cart[i.id],
+      harga: i.harga
+    }));
 
-  fetch(API_URL, {
-    method: 'POST',
-    body: JSON.stringify({
-      action: 'order',
-      nama: document.getElementById('nama').value,
-      whatsapp: document.getElementById('wa').value,
-      metode: document.getElementById('metode').value,
-      items,
-      total: items.reduce((t, i) => t + i.qty * i.harga, 0)
-    })
-  }).then(() => document.getElementById('modal').style.display = 'flex');
+  if (!items.length) {
+    alert('Pilih menu terlebih dahulu');
+    return;
+  }
+
+  document.getElementById('modal').style.display = 'flex';
 }
 
 function closeModal() {
   document.getElementById('modal').style.display = 'none';
 }
-</script>
-<script>
-function getParam(name) {
-  return new URLSearchParams(window.location.search).get(name) || '';
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('nama').value = decodeURIComponent(getParam('nama'));
-  document.getElementById('wa').value = getParam('wa');
-});
 </script>
 
 </body>
