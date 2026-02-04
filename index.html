@@ -255,6 +255,16 @@ function closeModal() {
   document.getElementById('modal').style.display = 'none';
 }
 </script>
+<script>
+function getParam(name) {
+  return new URLSearchParams(window.location.search).get(name) || '';
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('nama').value = decodeURIComponent(getParam('nama'));
+  document.getElementById('wa').value = getParam('wa');
+});
+</script>
 
 </body>
 </html>
