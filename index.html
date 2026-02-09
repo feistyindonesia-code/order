@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Food Ordering System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Food Order</h1>
+            <div class="user-info">
+                <input type="text" id="nama" placeholder="Nama Anda" required>
+                <input type="text" id="wa" placeholder="Nomor WhatsApp" required>
+            </div>
+        </header>
+
+        <section class="menu-section">
+            <h2>Menu</h2>
+            <div id="menu-container" class="menu-grid">
+                <!-- Menu items will be loaded here -->
+            </div>
+        </section>
+
+        <section class="cart-section">
+            <h2>Keranjang</h2>
+            <div id="cart-items" class="cart-items">
+                <!-- Cart items will be displayed here -->
+            </div>
+            <div class="cart-total">
+                <p>Total: <span id="total-price">Rp 0</span></p>
+            </div>
+        </section>
+
+        <section class="payment-section">
+            <h2>Pembayaran</h2>
+            <div class="payment-methods">
+                <label>
+                    <input type="radio" name="payment" value="COD" checked>
+                    COD (Bayar di Tempat)
+                </label>
+                <label>
+                    <input type="radio" name="payment" value="QRIS">
+                    QRIS
+                </label>
+            </div>
+            <button id="order-btn" class="btn-primary">Pesan Sekarang</button>
+        </section>
+    </div>
+
+    <!-- QRIS Modal -->
+    <div id="qris-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Scan QRIS untuk Pembayaran</h2>
+            <img id="qris-image" src="" alt="QRIS Code">
+            <p>Total: <span id="modal-total">Rp 0</span></p>
+            <button id="confirm-payment" class="btn-primary">Saya Sudah Bayar</button>
+        </div>
+    </div>
+
+    <!-- Loading Indicator -->
+    <div id="loading" class="loading">
+        <div class="spinner"></div>
+        <p>Loading...</p>
+    </div>
+
+    <!-- Error Message -->
+    <div id="error-message" class="error-message"></div>
+
+    <script src="assets/js/app.js"></script>
+</body>
+</html>
