@@ -82,7 +82,8 @@ function getConfig() {
     longitude: location.longitude,
     nama_toko: location.nama_toko,
     base_shipping_cost: settings.base_shipping_cost,
-    shipping_cost_per_km: settings.shipping_cost_per_km
+    shipping_cost_per_km: settings.shipping_cost_per_km,
+    free_shipping_min_distance: settings.free_shipping_min_distance
   };
 }
 
@@ -92,6 +93,7 @@ function getConfig() {
 // A1=base_shipping_cost, B1=shipping_cost_per_km
 // A2=5000, B2=2000 (Ongkir)
 // A3=1000, B3=87787655880 (Qris Fee)
+// A4=5, B4= (Free shipping min distance in km)
 // ==================================================
 function getSettings() {
   try {
@@ -113,7 +115,8 @@ function getSettings() {
         const perKm = Number(rows[i][1]) || 2000;
         return {
           base_shipping_cost: base,
-          shipping_cost_per_km: perKm
+          shipping_cost_per_km: perKm,
+          free_shipping_min_distance: Number(rows[i][2]) || 5
         };
       }
     }
@@ -122,14 +125,15 @@ function getSettings() {
     if (rows.length > 1) {
       return {
         base_shipping_cost: Number(rows[1][0]) || 5000,
-        shipping_cost_per_km: Number(rows[1][1]) || 2000
+        shipping_cost_per_km: Number(rows[1][1]) || 2000,
+        free_shipping_min_distance: Number(rows[1][2]) || 5
       };
     }
     
-    return { base_shipping_cost: 10000, shipping_cost_per_km: 2000 };
+    return { base_shipping_cost: 10000, shipping_cost_per_km: 2000, free_shipping_min_distance: 5 };
     
   } catch (err) {
-    return { base_shipping_cost: 10000, shipping_cost_per_km: 2000 };
+    return { base_shipping_cost: 10000, shipping_cost_per_km: 2000, free_shipping_min_distance: 5 };
   }
 }
 

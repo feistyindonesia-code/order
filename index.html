@@ -414,7 +414,8 @@
       qris_fee: 1000,
       gas_url_bot: "https://script.google.com/macros/s/AKfycbxqSZ1j2g6iS_rLM40Q7SlBmsuIfvOvWxxKyA22Y4LrtVOapt_dEuHiGXgXwoiNcxBAUQ/exec",
       base_shipping_cost: 10000,
-      shipping_cost_per_km: 2000
+      shipping_cost_per_km: 2000,
+      free_shipping_min_distance: 5
     };
 
     // Lokasi toko akan diambil dari data GAS
@@ -445,6 +446,9 @@
           }
           if (data.shipping_cost_per_km) {
             config.shipping_cost_per_km = parseFloat(data.shipping_cost_per_km);
+          }
+          if (data.free_shipping_min_distance) {
+            config.free_shipping_min_distance = parseFloat(data.free_shipping_min_distance);
           }
           
           console.log('✓ Config dimuat dari GAS');
@@ -611,6 +615,13 @@
     function calculateShippingCost(distance) {
       const baseCost = config.base_shipping_cost;
       const costPerKm = config.shipping_cost_per_km;
+      const freeMinDistance = config.free_shipping_min_distance || 0;
+      
+      // Gratis ongkir jika jarak >= minimum
+      if (distance >= freeMinDistance && freeMinDistance > 0) {
+        return 0;
+      }
+      
       const additionalCost = Math.ceil(distance) * costPerKm;
       return baseCost + additionalCost;
     }
@@ -906,7 +917,7 @@
           locationDisplay.innerHTML = `
             <span style="color: #10B981; font-weight: 600;">✓ Lokasi Terdeteksi</span><br>
             <span style="font-size: 12px; color: #666; margin-top: 4px;">${latitude.toFixed(4)}, ${longitude.toFixed(4)}</span><br>
-            <span style="font-size: 12px; color: #666; margin-top: 4px;">Jarak: ${distance.toFixed(2)} km | Ongkir: Rp ${shippingCost.toLocaleString('id-ID')}</span>
+            <span style="font-size: 12px; color: #666; margin-top: 4px;">Jarak: ${distance.toFixed(2)} km${shippingCost === 0 ? ' | 🎉 <strong>GRATIS ONGKIR!</strong>' : ' | Ongkir: Rp ' + shippingCost.toLocaleString('id-ID')}</span>
           `;
           shareLocBtn.textContent = '✓ Lokasi Sudah Diambil';
           shareLocBtn.style.background = '#10B981';
