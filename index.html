@@ -617,8 +617,8 @@
       const costPerKm = config.shipping_cost_per_km;
       const freeMinDistance = config.free_shipping_min_distance || 0;
       
-      // Gratis ongkir jika jarak >= minimum
-      if (distance >= freeMinDistance && freeMinDistance > 0) {
+      // Gratis ongkir jika jarak <= minimum
+      if (distance <= freeMinDistance && freeMinDistance > 0) {
         return 0;
       }
       
