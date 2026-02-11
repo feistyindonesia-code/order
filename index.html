@@ -406,6 +406,9 @@
    </div>
   </div>
   <script>
+    // URL GAS
+    const gasUrl = 'https://script.google.com/macros/s/AKfycbxV4vut_tRBRfAWkZUNBmH6xiW_tsc5x4WMAvTuE4Nx2R1gsqEYcbRF-uCNP4vJ5P6m1w/exec';
+
     const config = {
       store_name: "Feisty Kitchen",
       store_tagline: "Makanan Lezat, Harga Bersahabat",
@@ -428,39 +431,44 @@
     let cartData = {};
     let shippingCost = 0;
 
-    async function loadLocation() {
+    async function loadConfig() {
       try {
-        const gasUrl = 'https://script.google.com/macros/s/AKfycbz5ZTxm6KytLSwOew7HXxoaiW4fr3j2e_DoH4kwuP-zT_TZAiJJDrncANj6TXq9WypQHQ/exec?action=getLocation';
-        const response = await fetch(gasUrl);
+        const configUrl = gasUrl + '?action=getConfig';
+        const response = await fetch(configUrl);
         
         if (response.ok) {
           const data = await response.json();
-          // Validasi dan parsing latitude/longitude
-          const lat = parseFloat(data.latitude);
-          const lon = parseFloat(data.longitude);
           
-          if (!isNaN(lat) && !isNaN(lon) && lat !== 0 && lon !== 0) {
-            store_latitude = lat;
-            store_longitude = lon;
-            console.log('✓ Lokasi toko dimuat:', store_latitude, store_longitude);
-          } else {
-            console.warn('⚠ Lokasi toko tidak valid, menggunakan default Jakarta');
+          // Update lokasi toko
+          if (data.latitude && data.longitude) {
+            store_latitude = parseFloat(data.latitude);
+            store_longitude = parseFloat(data.longitude);
           }
-        } else {
-          console.warn('⚠ Gagal memuat lokasi, response tidak OK');
+          
+          // Update ongkir dari spreadsheet
+          if (data.base_shipping_cost) {
+            config.base_shipping_cost = parseFloat(data.base_shipping_cost);
+          }
+          if (data.shipping_cost_per_km) {
+            config.shipping_cost_per_km = parseFloat(data.shipping_cost_per_km);
+          }
+          
+          console.log('✓ Config dimuat dari GAS');
+          console.log('  Lokasi:', store_latitude, store_longitude);
+          console.log('  Ongkir:', config.base_shipping_cost, '+', config.shipping_cost_per_km, '/km');
         }
       } catch (error) {
-        console.warn('⚠ Gagal memuat lokasi toko:', error.message);
+        console.warn('⚠ Gagal memuat config dari GAS, menggunakan default');
       }
     }
 
     async function loadMenu() {
       try {
-        // Load lokasi dulu, baru load menu
-        await loadLocation();
+        // Load config dulu
+        await loadConfig();
         
-        const gasUrl = 'https://script.google.com/macros/s/AKfycbz5ZTxm6KytLSwOew7HXxoaiW4fr3j2e_DoH4kwuP-zT_TZAiJJDrncANj6TXq9WypQHQ/exec?action=getMenu';
-        const response = await fetch(gasUrl);
+        const menuUrl = gasUrl + '?action=getMenu';
+        const response = await fetch(menuUrl);
         
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}`);
