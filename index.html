@@ -428,9 +428,28 @@
     let cartData = {};
     let shippingCost = 0;
 
+    async function loadLocation() {
+      try {
+        const gasUrl = 'https://script.google.com/macros/s/AKfycbz5ZTxm6KytLSwOew7HXxoaiW4fr3j2e_DoH4kwuP-zT_TZAiJJDrncANj6TXq9WypQHQ/exec?action=getLocation';
+        const response = await fetch(gasUrl);
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.latitude) store_latitude = parseFloat(data.latitude);
+          if (data.longitude) store_longitude = parseFloat(data.longitude);
+          console.log('Lokasi toko dimuat:', store_latitude, store_longitude);
+        }
+      } catch (error) {
+        console.warn('Gagal memuat lokasi toko, menggunakan default');
+      }
+    }
+
     async function loadMenu() {
       try {
-        const gasUrl = 'https://script.google.com/macros/s/AKfycbz5ZTxm6KytLSwOew7HXxoaiW4fr3j2e_DoH4kwuP-zT_TZAiJJDrncANj6TXq9WypQHQ/exec';
+        // Load lokasi dulu, baru load menu
+        await loadLocation();
+        
+        const gasUrl = 'https://script.google.com/macros/s/AKfycbz5ZTxm6KytLSwOew7HXxoaiW4fr3j2e_DoH4kwuP-zT_TZAiJJDrncANj6TXq9WypQHQ/exec?action=getMenu';
         const response = await fetch(gasUrl);
         
         if (!response.ok) {
@@ -439,34 +458,6 @@
         
         const data = await response.json();
         
-        // Cek jika response adalah object dengan metadata (termasuk lokasi toko)
-        if (data && typeof data === 'object' && !Array.isArray(data)) {
-          // Ambil lokasi toko dari data response
-          if (data.latitude) store_latitude = parseFloat(data.latitude);
-          if (data.longitude) store_longitude = parseFloat(data.longitude);
-          
-          // Ambil menu items
-          const items = data.items || data.menu || [];
-          if (!Array.isArray(items) || items.length === 0) {
-            document.getElementById('menu-list').innerHTML = '<div class="error-msg">MENU KOSONG. Pastikan data ada di sheet.</div>';
-            return;
-          }
-          
-          menuData = items.map(item => ({
-            id: String(item.id),
-            name: item.nama || '',
-            desc: item.deskripsi || '',
-            price: item.harga || 0,
-            category: item.kategori || 'Lainnya',
-            image: item.gambar || ''
-          }));
-          
-          console.log('Lokasi toko:', store_latitude, store_longitude);
-          renderMenu();
-          return;
-        }
-        
-        // Jika response adalah array langsung
         if (!Array.isArray(data) || data.length === 0) {
           document.getElementById('menu-list').innerHTML = '<div class="error-msg">MENU KOSONG. Pastikan data ada di sheet.</div>';
           return;
