@@ -1,0 +1,835 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Feisty Admin Dashboard</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Arimo', Arial, sans-serif; background: #f0f2f5; }
+    
+    /* Login Page */
+    #login-page {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #FF4500 0%, #DC143C 100%);
+    }
+    .login-box {
+      background: white;
+      padding: 40px;
+      border-radius: 16px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      width: 90%;
+      max-width: 400px;
+    }
+    .login-box h1 { color: #FF4500; margin-bottom: 20px; text-align: center; }
+    .login-box input {
+      width: 100%;
+      padding: 14px;
+      margin: 10px 0;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+    .login-box button {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #FF4500 0%, #DC143C 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    .login-error { color: red; text-align: center; margin-top: 10px; display: none; }
+    
+    /* Dashboard */
+    #dashboard { display: none; }
+    
+    /* Header */
+    .admin-header {
+      background: linear-gradient(135deg, #1F2937 0%, #374151 100%);
+      color: white;
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .admin-header h1 { font-size: 20px; }
+    .logout-btn {
+      background: rgba(255,255,255,0.2);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    
+    /* Stats Cards */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 16px;
+      padding: 20px;
+    }
+    .stat-card {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    .stat-card .number { font-size: 28px; font-weight: bold; color: #FF4500; }
+    .stat-card .label { color: #666; font-size: 14px; margin-top: 4px; }
+    .stat-card.pending .number { color: #f59e0b; }
+    .stat-card.processing .number { color: #3b82f6; }
+    .stat-card.shipping .number { color: #8b5cf6; }
+    .stat-card.completed .number { color: #10b981; }
+    
+    /* Tabs */
+    .tabs {
+      display: flex;
+      background: white;
+      padding: 0 20px;
+      border-bottom: 2px solid #e5e7eb;
+      overflow-x: auto;
+    }
+    .tab {
+      padding: 16px 24px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      color: #666;
+      border-bottom: 3px solid transparent;
+      white-space: nowrap;
+    }
+    .tab.active { color: #FF4500; border-bottom-color: #FF4500; }
+    
+    /* Content */
+    .content { padding: 20px; }
+    
+    /* Filter */
+    .filter-bar {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .filter-bar input, .filter-bar select {
+      padding: 10px 14px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+    .filter-bar button {
+      padding: 10px 20px;
+      background: #FF4500;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .export-btn { background: #10b981 !important; }
+    
+    /* Orders Table */
+    .orders-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .orders-table th, .orders-table td {
+      padding: 14px 16px;
+      text-align: left;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .orders-table th {
+      background: #f9fafb;
+      font-weight: 600;
+      color: #374151;
+      font-size: 13px;
+      text-transform: uppercase;
+    }
+    .orders-table tr:hover { background: #f9fafb; }
+    .orders-table td { font-size: 14px; }
+    
+    /* Status Badge */
+    .status-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .status-pending { background: #fef3c7; color: #d97706; }
+    .status-processing { background: #dbeafe; color: #2563eb; }
+    .status-shipping { background: #ede9fe; color: #7c3aed; }
+    .status-completed { background: #d1fae5; color: #059669; }
+    .status-cancelled { background: #fee2e2; color: #dc2626; }
+    
+    /* Actions */
+    .action-btn {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      margin: 2px;
+    }
+    .btn-view { background: #e0e7ff; color: #4f46e5; }
+    .btn-update { background: #d1fae5; color: #059669; }
+    .btn-wa { background: #dcfce7; color: #16a34a; }
+    
+    /* Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal.open { display: flex; }
+    .modal-content {
+      background: white;
+      border-radius: 16px;
+      max-width: 600px;
+      width: 100%;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    .modal-header {
+      padding: 20px;
+      border-bottom: 1px solid #e5e7eb;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .modal-header h2 { font-size: 18px; }
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: #999;
+    }
+    .modal-body { padding: 20px; }
+    .modal-footer {
+      padding: 20px;
+      border-top: 1px solid #e5e7eb;
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+    }
+    
+    /* Order Detail */
+    .order-detail-section {
+      margin-bottom: 20px;
+    }
+    .order-detail-section h3 {
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 8px;
+    }
+    .order-detail-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    
+    /* Items List */
+    .items-list {
+      background: #f9fafb;
+      border-radius: 8px;
+      padding: 12px;
+    }
+    .item-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .item-row:last-child { border-bottom: none; }
+    
+    /* Status Update Buttons */
+    .status-options {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+    }
+    .status-btn {
+      padding: 10px 16px;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      background: white;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    .status-btn:hover { border-color: #FF4500; }
+    .status-btn.active { background: #FF4500; color: white; border-color: #FF4500; }
+    
+    /* Loading */
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #666;
+    }
+    .spinner {
+      width: 40px; height: 40px;
+      border: 4px solid #FF4500;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #999;
+    }
+    .empty-state svg {
+      width: 80px;
+      height: 80px;
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+    
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #1F2937;
+      color: white;
+      padding: 14px 24px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      z-index: 2000;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.3s;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast.success { background: #10b981; }
+    .toast.error { background: #ef4444; }
+  </style>
+</head>
+<body>
+  <!-- Login Page -->
+  <div id="login-page">
+    <div class="login-box">
+      <h1>🔐 Admin Feisty</h1>
+      <input type="text" id="admin-username" placeholder="Username">
+      <input type="password" id="admin-password" placeholder="Password">
+      <button onclick="login()">Masuk</button>
+      <p class="login-error" id="login-error">Username atau password salah!</p>
+      <p style="text-align: center; margin-top: 20px; font-size: 12px; color: #999;">
+        Default: admin / feisty2024
+      </p>
+    </div>
+  </div>
+  
+  <!-- Dashboard -->
+  <div id="dashboard">
+    <header class="admin-header">
+      <h1>📊 Feisty Admin Dashboard</h1>
+      <button class="logout-btn" onclick="logout()">Keluar</button>
+    </header>
+    
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="number" id="stat-today">0</div>
+        <div class="label">Hari Ini</div>
+      </div>
+      <div class="stat-card pending">
+        <div class="number" id="stat-pending">0</div>
+        <div class="label">Pending</div>
+      </div>
+      <div class="stat-card processing">
+        <div class="number" id="stat-processing">0</div>
+        <div class="label">Diproses</div>
+      </div>
+      <div class="stat-card shipping">
+        <div class="number" id="stat-shipping">0</div>
+        <div class="label">Dikirim</div>
+      </div>
+      <div class="stat-card completed">
+        <div class="number" id="stat-completed">0</div>
+        <div class="label">Selesai</div>
+      </div>
+      <div class="stat-card">
+        <div class="number" id="stat-revenue">Rp0</div>
+        <div class="label">Pendapatan</div>
+      </div>
+    </div>
+    
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('orders')">📦 Pesanan</button>
+      <button class="tab" onclick="switchTab('menu')">🍔 Menu</button>
+      <button class="tab" onclick="switchTab('customers')">👥 Customer</button>
+      <button class="tab" onclick="switchTab('settings')">⚙️ Pengaturan</button>
+    </div>
+    
+    <!-- Orders Tab -->
+    <div id="tab-orders" class="content">
+      <div class="filter-bar">
+        <input type="text" id="search-order" placeholder="Cari order ID, nama, WA..." onkeyup="filterOrders()">
+        <select id="filter-status" onchange="filterOrders()">
+          <option value="">Semua Status</option>
+          <option value="PENDING">Pending</option>
+          <option value="PROCESSING">Diproses</option>
+          <option value="SHIPPING">Dikirim</option>
+          <option value="COMPLETED">Selesai</option>
+          <option value="CANCELLED">Dibatalkan</option>
+        </select>
+        <input type="date" id="filter-date" onchange="filterOrders()">
+        <button onclick="loadOrders()">🔄 Refresh</button>
+        <button class="export-btn" onclick="exportOrders()">📊 Export</button>
+      </div>
+      <div id="orders-container">
+        <div class="loading"><div class="spinner"></div>Memuat pesanan...</div>
+      </div>
+    </div>
+    
+    <!-- Menu Tab -->
+    <div id="tab-menu" class="content" style="display:none;">
+      <div class="filter-bar">
+        <button onclick="alert('Fitur edit menu ada di Google Sheet langsung.\n\nSheet: Menu')">➕ Tambah Menu</button>
+      </div>
+      <div id="menu-container">
+        <div class="loading"><div class="spinner"></div>Memuat menu...</div>
+      </div>
+    </div>
+    
+    <!-- Customers Tab -->
+    <div id="tab-customers" class="content" style="display:none;">
+      <div class="filter-bar">
+        <input type="text" id="search-customer" placeholder="Cari nama atau WA..." onkeyup="filterCustomers()">
+        <button onclick="loadCustomers()">🔄 Refresh</button>
+      </div>
+      <div id="customers-container">
+        <div class="loading"><div class="spinner"></div>Memuat customer...</div>
+      </div>
+    </div>
+    
+    <!-- Settings Tab -->
+    <div id="tab-settings" class="content" style="display:none;">
+      <div class="filter-bar">
+        <button onclick="alert('Pengaturan ada di Google Sheet.\n\nSheet: Pengaturan\nSheet: Lokasi')">📝 Edit Pengaturan</button>
+      </div>
+      <div class="filter-bar">
+        <button onclick="alert('Sheet akan dibuat otomatis.\n\nFungsi: setupSheets() di GAS')">🔧 Setup Sheets</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Order Detail Modal -->
+  <div class="modal" id="order-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modal-title">Detail Pesanan</h2>
+        <button class="modal-close" onclick="closeModal()">×</button>
+      </div>
+      <div class="modal-body" id="modal-body">
+        <!-- Order details here -->
+      </div>
+      <div class="modal-footer">
+        <button class="action-btn btn-wa" onclick="sendWAMessage()">💬 WA Customer</button>
+        <button class="action-btn" onclick="closeModal()">Tutup</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+  
+  <script>
+    // Config
+    const ADMIN_USERNAME = 'admin';
+    const ADMIN_PASSWORD = 'feisty2024';
+    let GAS_URL = 'https://script.google.com/macros/s/AKfycbw3hMoo6L1lBBgN1EbH5iUsR1oqTEd3Oex8Wm2guGkg1Y2fu1U-PmO_6-9_mIpo9b2GJw/exec';
+    
+    let allOrders = [];
+    let allCustomers = [];
+    let currentOrder = null;
+    
+    // Login
+    function login() {
+      const user = document.getElementById('admin-username').value;
+      const pass = document.getElementById('admin-password').value;
+      
+      if (user === ADMIN_USERNAME && pass === ADMIN_PASSWORD) {
+        localStorage.setItem('feisty_admin', 'true');
+        document.getElementById('login-page').style.display = 'none';
+        document.getElementById('dashboard').style.display = 'block';
+        loadOrders();
+        loadStats();
+      } else {
+        document.getElementById('login-error').style.display = 'block';
+      }
+    }
+    
+    function logout() {
+      localStorage.removeItem('feisty_admin');
+      location.reload();
+    }
+    
+    // Check login
+    if (localStorage.getItem('feisty_admin') === 'true') {
+      document.getElementById('login-page').style.display = 'none';
+      document.getElementById('dashboard').style.display = 'block';
+      loadOrders();
+      loadStats();
+    }
+    
+    // Tabs
+    function switchTab(tab) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      event.target.classList.add('active');
+      
+      document.querySelectorAll('.content').forEach(c => c.style.display = 'none');
+      document.getElementById('tab-' + tab).style.display = 'block';
+      
+      if (tab === 'orders') loadOrders();
+      if (tab === 'menu') loadMenu();
+      if (tab === 'customers') loadCustomers();
+    }
+    
+    // Load Orders
+    async function loadOrders() {
+      const container = document.getElementById('orders-container');
+      container.innerHTML = '<div class="loading"><div class="spinner"></div>Memuat pesanan...</div>';
+      
+      try {
+        const response = await fetch(GAS_URL + '?action=getOrders');
+        const orders = await response.json();
+        allOrders = orders;
+        renderOrders(orders);
+        updateStats(orders);
+      } catch (error) {
+        container.innerHTML = '<div class="error-msg">Gagal memuat pesanan. Cek GAS URL.</div>';
+      }
+    }
+    
+    function renderOrders(orders) {
+      const container = document.getElementById('orders-container');
+      
+      if (orders.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 6h-2v11h2V6zm-4 0h-2v9h2V6zM4 6h12v2H4V6zm0 4h8v2H8v-2zm0 4h8v2H8v-2zm4-8h4v2h-4v-2zm0 4h4v2h-4v-2z"/></svg>
+            <p>Belum ada pesanan</p>
+          </div>
+        `;
+        return;
+      }
+      
+      const search = document.getElementById('search-order').value.toLowerCase();
+      const status = document.getElementById('filter-status').value;
+      const date = document.getElementById('filter-date').value;
+      
+      let filtered = orders.filter(o => {
+        const matchSearch = !search || 
+          (o.order_id && o.order_id.toLowerCase().includes(search)) ||
+          (o.nama && o.nama.toLowerCase().includes(search)) ||
+          (o.phone && o.phone.includes(search));
+        const matchStatus = !status || o.status === status;
+        const orderDate = new Date(o.timestamp).toISOString().split('T')[0];
+        const matchDate = !date || orderDate === date;
+        return matchSearch && matchStatus && matchDate;
+      });
+      
+      // Sort by newest first
+      filtered.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+      
+      let html = '<table class="orders-table"><thead><tr>';
+      html += '<th>Order ID</th><th>Waktu</th><th>Customer</th><th>Total</th><th>Status</th><th>Aksi</th>';
+      html += '</tr></thead><tbody>';
+      
+      filtered.forEach(order => {
+        const time = new Date(order.timestamp).toLocaleString('id-ID');
+        const statusClass = 'status-' + (order.status || 'pending').toLowerCase();
+        
+        html += '<tr>';
+        html += `<td><strong>${order.order_id || '-'}</strong></td>`;
+        html += `<td>${time}</td>`;
+        html += `<td>${order.nama || '-'}<br><small>${order.phone || ''}</small></td>`;
+        html += `<td><strong>Rp ${formatPrice(order.total || 0)}</strong></td>`;
+        html += `<td><span class="status-badge ${statusClass}">${order.status || 'PENDING'}</span></td>`;
+        html += `<td>
+          <button class="action-btn btn-view" onclick="viewOrder('${order.order_id}')">Lihat</button>
+          <button class="action-btn btn-update" onclick="showStatusUpdate('${order.order_id}')">Ubah</button>
+        </td>`;
+        html += '</tr>';
+      });
+      
+      html += '</tbody></table>';
+      container.innerHTML = html;
+    }
+    
+    function filterOrders() {
+      renderOrders(allOrders);
+    }
+    
+    // Update Stats
+    function updateStats(orders) {
+      const today = new Date().toISOString().split('T')[0];
+      const todayOrders = orders.filter(o => new Date(o.timestamp).toISOString().split('T')[0] === today);
+      const pending = orders.filter(o => o.status === 'PENDING').length;
+      const processing = orders.filter(o => o.status === 'PROCESSING').length;
+      const shipping = orders.filter(o => o.status === 'SHIPPING').length;
+      const completed = orders.filter(o => o.status === 'COMPLETED').length;
+      const revenue = orders.filter(o => o.status === 'COMPLETED').reduce((sum, o) => sum + (o.total || 0), 0);
+      
+      document.getElementById('stat-today').textContent = todayOrders.length;
+      document.getElementById('stat-pending').textContent = pending;
+      document.getElementById('stat-processing').textContent = processing;
+      document.getElementById('stat-shipping').textContent = shipping;
+      document.getElementById('stat-completed').textContent = completed;
+      document.getElementById('stat-revenue').textContent = 'Rp ' + formatPrice(revenue);
+    }
+    
+    function loadStats() {
+      loadOrders();
+    }
+    
+    // View Order
+    function viewOrder(orderId) {
+      const order = allOrders.find(o => o.order_id === orderId);
+      if (!order) return;
+      
+      currentOrder = order;
+      document.getElementById('modal-title').textContent = 'Order: ' + orderId;
+      
+      const items = JSON.parse(order.items || '[]');
+      let itemsHtml = '<div class="items-list">';
+      items.forEach(item => {
+        itemsHtml += `
+          <div class="item-row">
+            <span>${item.name} x${item.qty}</span>
+            <span>Rp ${formatPrice(item.price * item.qty)}</span>
+          </div>
+        `;
+      });
+      itemsHtml += '</div>';
+      
+      document.getElementById('modal-body').innerHTML = `
+        <div class="order-detail-section">
+          <h3>📋 Info Pesanan</h3>
+          <div class="order-detail-row"><span>Order ID</span><span>${order.order_id}</span></div>
+          <div class="order-detail-row"><span>Waktu</span><span>${new Date(order.timestamp).toLocaleString('id-ID')}</span></div>
+          <div class="order-detail-row"><span>Status</span><span class="status-badge status-${(order.status || 'pending').toLowerCase()}">${order.status || 'PENDING'}</span></div>
+          <div class="order-detail-row"><span>Metode</span><span>${order.payment_method || '-'}</span></div>
+        </div>
+        
+        <div class="order-detail-section">
+          <h3>👤 Customer</h3>
+          <div class="order-detail-row"><span>Nama</span><span>${order.nama || '-'}</span></div>
+          <div class="order-detail-row"><span>WhatsApp</span><span>${order.phone || '-'}</span></div>
+          <div class"><span>Al="order-detail-rowamat</span><span>${order.alamat || '-'}</span></div>
+        </div>
+        
+        <div class="order-detail-section">
+          <h3>📦 Items</h3>
+          ${itemsHtml}
+        </div>
+        
+        <div class="order-detail-section">
+          <h3>💰 Rincian</h3>
+          <div class="order-detail-row"><span>Subtotal</span><span>Rp ${formatPrice(order.subtotal || 0)}</span></div>
+          <div class="order-detail-row"><span>Ongkir</span><span>Rp ${formatPrice(order.shipping_cost || 0)}</span></div>
+          ${order.discount > 0 ? `<div class="order-detail-row"><span>Diskon</span><span>- Rp ${formatPrice(order.discount)}</span></div>` : ''}
+          <div class="order-detail-row" style="font-weight:bold; font-size:16px; color:#FF4500;"><span>Total</span><span>Rp ${formatPrice(order.total || 0)}</span></div>
+        </div>
+        
+        ${order.location_url ? `<p style="text-align:center; margin-top:12px;"><a href="${order.location_url}" target="_blank">📍 Lihat Lokasi Pengiriman</a></p>` : ''}
+        
+        <div class="status-options">
+          <button class="status-btn ${order.status === 'PENDING' ? 'active' : ''}" onclick="updateOrderStatus('${orderId}', 'PENDING')">Pending</button>
+          <button class="status-btn ${order.status === 'PROCESSING' ? 'active' : ''}" onclick="updateOrderStatus('${orderId}', 'PROCESSING')">Diproses</button>
+          <button class="status-btn ${order.status === 'SHIPPING' ? 'active' : ''}" onclick="updateOrderStatus('${orderId}', 'SHIPPING')">Dikirim</button>
+          <button class="status-btn ${order.status === 'COMPLETED' ? 'active' : ''}" onclick="updateOrderStatus('${orderId}', 'COMPLETED')">Selesai</button>
+          <button class="status-btn ${order.status === 'CANCELLED' ? 'active' : ''}" onclick="updateOrderStatus('${orderId}', 'CANCELLED')">Batal</button>
+        </div>
+      `;
+      
+      document.getElementById('order-modal').classList.add('open');
+    }
+    
+    function showStatusUpdate(orderId) {
+      viewOrder(orderId);
+    }
+    
+    async function updateOrderStatus(orderId, newStatus) {
+      try {
+        const response = await fetch(GAS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'updateStatus',
+            order_id: orderId,
+            status: newStatus
+          })
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+          showToast('Status berhasil diubah!', 'success');
+          loadOrders();
+          closeModal();
+        } else {
+          showToast('Gagal mengubah status', 'error');
+        }
+      } catch (error) {
+        showToast('Error: ' + error.message, 'error');
+      }
+    }
+    
+    function sendWAMessage() {
+      if (!currentOrder || !currentOrder.phone) return;
+      const msg = encodeURIComponent(`Halo ${currentOrder.nama}, ada info pesanan ${currentOrder.order_id}`);
+      window.open(`https://wa.me/${currentOrder.phone}?text=${msg}`, '_blank');
+    }
+    
+    function closeModal() {
+      document.getElementById('order-modal').classList.remove('open');
+    }
+    
+    // Load Menu
+    async function loadMenu() {
+      const container = document.getElementById('menu-container');
+      container.innerHTML = '<div class="loading"><div class="spinner"></div>Memuat menu...</div>';
+      
+      try {
+        const response = await fetch(GAS_URL + '?action=getMenu');
+        const menu = await response.json();
+        
+        if (!Array.isArray(menu) || menu.length === 0) {
+          container.innerHTML = '<div class="empty-state"><p>Menu kosong</p></div>';
+          return;
+        }
+        
+        let html = '<table class="orders-table"><thead><tr>';
+        html += '<th>Nama</th><th>Kategori</th><th>Harga</th><th>Status</th>';
+        html += '</tr></thead><tbody>';
+        
+        menu.forEach(item => {
+          const status = item.aktif ? 'Aktif' : 'Nonaktif';
+          html += '<tr>';
+          html += `<td><strong>${item.nama}</strong><br><small>${item.deskripsi || ''}</small></td>`;
+          html += `<td>${item.kategori || '-'}</td>`;
+          html += `<td>Rp ${formatPrice(item.harga)}</td>`;
+          html += `<td><span class="status-badge ${item.aktif ? 'status-completed' : 'status-cancelled'}">${status}</span></td>`;
+          html += '</tr>';
+        });
+        
+        html += '</tbody></table>';
+        container.innerHTML = html;
+      } catch (error) {
+        container.innerHTML = '<div class="error-msg">Gagal memuat menu</div>';
+      }
+    }
+    
+    // Load Customers
+    async function loadCustomers() {
+      const container = document.getElementById('customers-container');
+      container.innerHTML = '<div class="loading"><div class="spinner"></div>Memuat customer...</div>';
+      
+      try {
+        const response = await fetch(GAS_URL + '?action=getCustomers');
+        const customers = await response.json();
+        allCustomers = customers;
+        
+        if (!Array.isArray(customers) || customers.length === 0) {
+          container.innerHTML = '<div class="empty-state"><p>Belum ada customer</p></div>';
+          return;
+        }
+        
+        let html = '<table class="orders-table"><thead><tr>';
+        html += '<th>WhatsApp</th><th>Nama</th><th>Alamat</th><th>Diskon</th>';
+        html += '</tr></thead><tbody>';
+        
+        customers.forEach(c => {
+          html += '<tr>';
+          html += `<td>${c.phone || '-'}</td>`;
+          html += `<td>${c.nama || '-'}</td>`;
+          html += `<td>${c.alamat || '-'}</td>`;
+          html += `<td>${c.tipe_diskon && c.nilai_diskon ? c.tipe_diskon + ': ' + c.nilai_diskon : '-'}</td>`;
+          html += '</tr>';
+        });
+        
+        html += '</tbody></table>';
+        container.innerHTML = html;
+      } catch (error) {
+        container.innerHTML = '<div class="error-msg">Gagal memuat customer</div>';
+      }
+    }
+    
+    function filterCustomers() {
+      const search = document.getElementById('search-customer').value.toLowerCase();
+      const filtered = allCustomers.filter(c => 
+        !search || 
+        (c.nama && c.nama.toLowerCase().includes(search)) ||
+        (c.phone && c.phone.includes(search))
+      );
+      // Re-render...
+    }
+    
+    // Export Orders
+    function exportOrders() {
+      let csv = 'Order ID,Waktu,Customer,WA,Alamat,Items,Subtotal,Ongkir,Diskon,Total,Status,Metode\n';
+      
+      allOrders.forEach(order => {
+        const items = JSON.parse(order.items || '[]').map(i => `${i.name}x${i.qty}`).join('; ');
+        csv += `"${order.order_id}","${order.timestamp}","${order.nama}","${order.phone}","${order.alamat}","${items.replace(/"/g, '""')}","${order.subtotal}","${order.shipping_cost}","${order.discount}","${order.total}","${order.status}","${order.payment_method}"\n`;
+      });
+      
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'feisty-orders-' + new Date().toISOString().split('T')[0] + '.csv';
+      a.click();
+      showToast('Export berhasil!', 'success');
+    }
+    
+    // Utils
+    function formatPrice(price) {
+      return Number(price).toLocaleString('id-ID');
+    }
+    
+    function showToast(msg, type = '') {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.className = 'toast show ' + type;
+      setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+    
+    // Close modal on outside click
+    document.getElementById('order-modal').addEventListener('click', function(e) {
+      if (e.target === this) closeModal();
+    });
+  </script>
+</body>
+</html>

@@ -234,6 +234,8 @@ function doGet(e) {
   else if (action === 'getLocation') result = getLocation();
   else if (action === 'getConfig') result = getConfig();
   else if (action === 'getCustomer') result = getCustomerByPhone(phone);
+  else if (action === 'getOrders') result = getOrders();
+  else if (action === 'getCustomers') result = getAllCustomers();
   else result = { error: 'Invalid action: ' + action };
   
   if (callback) {
@@ -257,6 +259,11 @@ function doPost(e) {
     if (body.action === 'ORDER') {
       handleOrderFromIndex(body);
       return jsonResponse({ status: 'success' });
+    }
+    
+    if (body.action === 'updateStatus') {
+      const result = updateOrderStatus(body.order_id, body.status);
+      return jsonResponse(result);
     }
     
     const phone = normalizeNumber(body.number || body.from || body.sender || "");
@@ -605,6 +612,145 @@ function updateCustomer(row, name, state) {
     sh.getRange(row, 6).setValue(state);
     sh.getRange(row, 8).setValue(new Date());
   } catch (err) {}
+}
+
+// ==================================================
+// ADMIN FUNCTIONS
+// ==================================================
+
+// Get all orders for admin dashboard
+function getOrders() {
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sh = ss.getSheetByName(ORDERS_SHEET);
+    
+    if (!sh) return [];
+    
+    const data = sh.getDataRange().getValues();
+    
+    if (data.length < 2) return [];
+    
+    // Remove header
+    const rows = data.slice(1);
+    
+    return rows.map(row => ({
+      timestamp: row[0],
+      phone: String(row[1] || ''),
+      nama: String(row[2] || ''),
+      alamat: String(row[3] || ''),
+      items: String(row[4] || '[]'),
+      subtotal: Number(row[5]) || 0,
+      shipping_cost: Number(row[6]) || 0,
+      diskon: Number(row[7]) || 0,
+      total: Number(row[8]) || 0,
+      payment_method: String(row[9] || ''),
+      order_id: String(row[10] || ''),
+      status: String(row[11] || 'PENDING')
+    }));
+    
+  } catch (err) {
+    return { error: err.toString() };
+  }
+}
+
+// Get all customers for admin dashboard
+function getAllCustomers() {
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sh = ss.getSheetByName(CUSTOMERS_SHEET);
+    
+    if (!sh) return [];
+    
+    const data = sh.getDataRange().getValues();
+    
+    if (data.length < 2) return [];
+    
+    const rows = data.slice(1);
+    
+    return rows.map(row => ({
+      phone: String(row[0] || ''),
+      nama: String(row[1] || ''),
+      alamat: String(row[2] || ''),
+      tipe_diskon: String(row[3] || ''),
+      nilai_diskon: Number(row[4]) || 0,
+      state: String(row[5] || ''),
+      created_at: row[6],
+      updated_at: row[7]
+    }));
+    
+  } catch (err) {
+    return { error: err.toString() };
+  }
+}
+
+// Update order status
+function updateOrderStatus(orderId, newStatus) {
+  try {
+    if (!orderId || !newStatus) {
+      return { success: false, message: 'Order ID dan status diperlukan' };
+    }
+    
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sh = ss.getSheetByName(ORDERS_SHEET);
+    
+    if (!sh) {
+      return { success: false, message: 'Sheet pesanan tidak ditemukan' };
+    }
+    
+    const data = sh.getDataRange().getValues();
+    
+    // Find the order (column K = index 10 is order_id)
+    let orderRow = -1;
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][10]) === String(orderId)) {
+        orderRow = i + 1;
+        break;
+      }
+    }
+    
+    if (orderRow === -1) {
+      return { success: false, message: 'Pesanan tidak ditemukan' };
+    }
+    
+    // Get current order data
+    const currentStatus = data[orderRow - 1][11];
+    const customerPhone = data[orderRow - 1][1];
+    const customerName = data[orderRow - 1][2];
+    const orderTotal = data[orderRow - 1][8];
+    
+    // Update status
+    sh.getRange(orderRow, 12).setValue(newStatus);
+    
+    // Send WA notification
+    const statusMessages = {
+      'PENDING': 'Pesanan Anda telah DITERIMA dan akan segera diproses.',
+      'PROCESSING': 'Pesanan Anda sedang DIPROSES dan disiapkan.',
+      'SHIPPING': '🚚 Pesanan Anda sedang DALAM PENGIRIMAN!',
+      'COMPLETED': '✅ Pesanan Anda telah SELESAI. Terima kasih!',
+      'CANCELLED': '❌ Pesanan Anda telah DIBATALKAN.'
+    };
+    
+    const msg = `📋 *Update Pesanan ${orderId}*
+
+Halo *${customerName}*,
+${statusMessages[newStatus] || 'Status berubah menjadi: ' + newStatus}
+
+💰 Total: Rp ${Number(orderTotal).toLocaleString('id-ID')}
+
+Terima kasih! 🙏`;
+    
+    sendWA(customerPhone, msg);
+    
+    return { 
+      success: true, 
+      message: 'Status berhasil diubah',
+      previousStatus: currentStatus,
+      newStatus: newStatus
+    };
+    
+  } catch (err) {
+    return { success: false, message: err.toString() };
+  }
 }
 
 // ==================================================
