@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Feisty</title>
-  <script src="/_sdk/element_sdk.js"></script>
   <style>
     body {
       box-sizing: border-box;
@@ -378,8 +377,6 @@
     }
   </style>
   <style>@view-transition { navigation: auto; }</style>
-  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
-  <script src="https://cdn.tailwindcss.com" type="text/javascript"></script>
  </head>
  <body>
   <div id="app-wrapper">
@@ -428,24 +425,6 @@
     let menuData = [];
     let cartData = {};
     let shippingCost = 0;
-
-    window.elementSdk.init({
-      defaultConfig: config,
-      onConfigChange: async (newConfig) => {
-        Object.assign(config, newConfig);
-      },
-      mapToCapabilities: (cfg) => ({
-        recolorables: [],
-        borderables: [],
-        fontEditable: undefined,
-        fontSizeable: undefined
-      }),
-      mapToEditPanelValues: (cfg) => new Map([
-        ["store_name", cfg.store_name],
-        ["store_tagline", cfg.store_tagline],
-        ["whatsapp_number", cfg.whatsapp_number]
-      ])
-    });
 
     async function loadMenu() {
       try {
