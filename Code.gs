@@ -6,14 +6,224 @@ const SPREADSHEET_ID = '1rGtVLbMwHrceTzJ9Nhu5H4ZTY2wAd_nXOc4LKPXFuLA';
 const MENU_SHEET = 'Menu';
 const LOCATION_SHEET = 'Lokasi';
 const SETTINGS_SHEET = 'Pengaturan';
+const CUSTOMERS_SHEET = 'Customers';
+const ORDERS_SHEET = 'Orders';
 
 const DEVICE_ID = "92b2af76-130d-46f0-b811-0874e3407988";
 const WA_API = "https://api.whacenter.com/api/send";
-const SHEET_CUSTOMERS = "customers";
-const SHEET_ORDERS = "orders";
 const ADMIN_PHONE = "6287787655880";
 
 const PROCESSED_ORDER_IDS = {};
+
+// ==================================================
+// SETUP SHEETS FUNCTION
+// Automatically creates/modifies sheets with required columns
+// ==================================================
+function setupSheets() {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  
+  // 1. Setup Menu Sheet
+  setupMenuSheet(ss);
+  
+  // 2. Setup Customers Sheet
+  setupCustomersSheet(ss);
+  
+  // 3. Setup Orders Sheet
+  setupOrdersSheet(ss);
+  
+  // 4. Setup Lokasi Sheet
+  setupLokasiSheet(ss);
+  
+  // 5. Setup Pengaturan Sheet
+  setupPengaturanSheet(ss);
+  
+  return { status: 'success', message: 'All sheets setup completed' };
+}
+
+function setupMenuSheet(ss) {
+  let sh = ss.getSheetByName(MENU_SHEET);
+  
+  if (!sh) {
+    sh = ss.insertSheet(MENU_SHEET);
+  }
+  
+  // Set headers for Menu sheet
+  const headers = [
+    'nama',           // Item name
+    'deskripsi',      // Description
+    'harga',          // Selling price
+    'harga_asli',     // Original price (for discounts)
+    'diskon_persen',  // Percentage discount (0-100)
+    'kategori',       // Category
+    'gambar',         // Image URL
+    'aktif',          // Active status (TRUE/FALSE)
+    'urutan'          // Sort order
+  ];
+  
+  sh.getRange('1:1').clear();
+  sh.getRange('1:1', 1, 1, headers.length).setValues([headers]);
+  
+  // Format header row
+  sh.getRange('1:1').setFontWeight('bold').setBackground('#FFE0D6');
+  
+  // Set column widths
+  sh.setColumnWidth(1, 200);  // nama
+  sh.setColumnWidth(2, 250);  // deskripsi
+  sh.setColumnWidth(3, 100);  // harga
+  sh.setColumnWidth(4, 100);  // harga_asli
+  sh.setColumnWidth(5, 100);  // diskon_persen
+  sh.setColumnWidth(6, 120);  // kategori
+  sh.setColumnWidth(7, 250);  // gambar
+  sh.setColumnWidth(8, 80);   // aktif
+  sh.setColumnWidth(9, 80);   // urutan
+  
+  // Add sample data if empty
+  if (sh.getLastRow() === 1) {
+    sh.appendRow(['Nasi Goreng Special', 'Nasi goreng dengan ayam, telur, dan sayuran', 25000, 30000, 17, 'Makanan', '', true, 1]);
+    sh.appendRow(['Ayam Goreng', 'Ayam goreng krispi dengan sambal', 20000, 25000, 20, 'Makanan', '', true, 2]);
+    sh.appendRow(['Es Teh Manis', 'Es teh manis segar', 5000, 0, 0, 'Minuman', '', true, 3]);
+  }
+}
+
+function setupCustomersSheet(ss) {
+  let sh = ss.getSheetByName(CUSTOMERS_SHEET);
+  
+  if (!sh) {
+    sh = ss.insertSheet(CUSTOMERS_SHEET);
+  }
+  
+  // Set headers for Customers sheet
+  const headers = [
+    'phone',         // Phone number (primary key)
+    'nama',          // Customer name
+    'alamat',        // Address
+    'tipe_diskon',   // Discount type (persen/fix)
+    'nilai_diskon',  // Discount value
+    'state',         // Bot state
+    'created_at',    // Created timestamp
+    'updated_at'     // Updated timestamp
+  ];
+  
+  sh.getRange('1:1').clear();
+  sh.getRange('1:1', 1, 1, headers.length).setValues([headers]);
+  
+  // Format header row
+  sh.getRange('1:1').setFontWeight('bold').setBackground('#E0FFE0');
+  
+  // Set column widths
+  sh.setColumnWidth(1, 130);  // phone
+  sh.setColumnWidth(2, 180);  // nama
+  sh.setColumnWidth(3, 300);  // alamat
+  sh.setColumnWidth(4, 100);  // tipe_diskon
+  sh.setColumnWidth(5, 100);  // nilai_diskon
+  sh.setColumnWidth(6, 100);  // state
+  sh.setColumnWidth(7, 150);  // created_at
+  sh.setColumnWidth(8, 150);  // updated_at
+}
+
+function setupOrdersSheet(ss) {
+  let sh = ss.getSheetByName(ORDERS_SHEET);
+  
+  if (!sh) {
+    sh = ss.insertSheet(ORDERS_SHEET);
+  }
+  
+  // Set headers for Orders sheet
+  const headers = [
+    'timestamp',       // Order timestamp
+    'phone',          // Customer phone
+    'nama',           // Customer name
+    'alamat',         // Customer address
+    'items',          // Items (JSON)
+    'subtotal',       // Subtotal
+    'ongkir',         // Shipping cost
+    'diskon',         // Discount
+    'total',          // Total
+    'payment_method', // Payment method
+    'order_id',       // Unique order ID
+    'status'          // Order status
+  ];
+  
+  sh.getRange('1:1').clear();
+  sh.getRange('1:1', 1, 1, headers.length).setValues([headers]);
+  
+  // Format header row
+  sh.getRange('1:1').setFontWeight('bold').setBackground('#E0E0FF');
+  
+  // Set column widths
+  sh.setColumnWidth(1, 150);  // timestamp
+  sh.setColumnWidth(2, 130);  // phone
+  sh.setColumnWidth(3, 150);  // nama
+  sh.setColumnWidth(4, 250);  // alamat
+  sh.setColumnWidth(5, 300);  // items
+  sh.setColumnWidth(6, 100);  // subtotal
+  sh.setColumnWidth(7, 100);  // ongkir
+  sh.setColumnWidth(8, 100);  // diskon
+  sh.setColumnWidth(9, 100);  // total
+  sh.setColumnWidth(10, 100); // payment_method
+  sh.setColumnWidth(11, 180); // order_id
+  sh.setColumnWidth(12, 100); // status
+}
+
+function setupLokasiSheet(ss) {
+  let sh = ss.getSheetByName(LOCATION_SHEET);
+  
+  if (!sh) {
+    sh = ss.insertSheet(LOCATION_SHEET);
+  }
+  
+  // Set headers for Lokasi sheet
+  const headers = [
+    'nama_toko',   // Store name
+    'latitude',   // Store latitude
+    'longitude'   // Store longitude
+  ];
+  
+  sh.getRange('1:1').clear();
+  sh.getRange('1:1', 1, 1, headers.length).setValues([headers]);
+  
+  // Format header row
+  sh.getRange('1:1').setFontWeight('bold').setBackground('#FFF0E0');
+  
+  // Add default data if empty
+  if (sh.getLastRow() === 1) {
+    sh.appendRow(['Feisty Kitchen', -6.2088, 106.8456]);
+  }
+}
+
+function setupPengaturanSheet(ss) {
+  let sh = ss.getSheetByName(SETTINGS_SHEET);
+  
+  if (!sh) {
+    sh = ss.insertSheet(SETTINGS_SHEET);
+  }
+  
+  // Set headers for Pengaturan sheet
+  const headers = [
+    'setting',    // Setting name
+    'value',      // Setting value
+    'description' // Description
+  ];
+  
+  sh.getRange('1:1').clear();
+  sh.getRange('1:1', 1, 1, headers.length).setValues([headers]);
+  
+  // Format header row
+  sh.getRange('1:1').setFontWeight('bold').setBackground('#FFF0F0');
+  
+  // Add default settings if empty
+  if (sh.getLastRow() === 1) {
+    sh.appendRow(['base_shipping_cost', 10000, 'Base shipping cost in IDR']);
+    sh.appendRow(['shipping_cost_per_km', 2000, 'Additional cost per km']);
+    sh.appendRow(['free_shipping_min_distance', 5, 'Min distance for free shipping (km)']);
+    sh.appendRow(['qris_fee', 1000, 'QRIS transaction fee']);
+  }
+  
+  // Set column widths
+  sh.setColumnWidth(1, 200);
+  sh.setColumnWidth(2, 150);
+  sh.setColumnWidth(3, 300);
+}
 
 // ==================================================
 // DOGET
@@ -21,12 +231,14 @@ const PROCESSED_ORDER_IDS = {};
 function doGet(e) {
   const action = e?.parameter?.action || 'getMenu';
   const callback = e?.parameter?.callback;
+  const phone = e?.parameter?.phone; // Customer phone from URL
   
   let result;
   
   if (action === 'getMenu') result = getMenu();
   else if (action === 'getLocation') result = getLocation();
   else if (action === 'getConfig') result = getConfig();
+  else if (action === 'getCustomer') result = getCustomerByPhone(phone);
   else result = { error: 'Invalid action: ' + action };
   
   if (callback) {
@@ -89,11 +301,6 @@ function getConfig() {
 
 // ==================================================
 // GET SETTINGS FROM PENGATURAN SHEET
-// Format:
-// A1=base_shipping_cost, B1=shipping_cost_per_km
-// A2=5000, B2=2000 (Ongkir)
-// A3=1000, B3=87787655880 (Qris Fee)
-// A4=5, B4= (Free shipping min distance in km)
 // ==================================================
 function getSettings() {
   try {
@@ -106,31 +313,27 @@ function getSettings() {
     
     const rows = sh.getDataRange().getValues();
     
-    // Skip header row, read data from row 2 onwards
+    const settings = {};
     for (let i = 1; i < rows.length; i++) {
-      const label = String(rows[i][0] || '').toLowerCase();
+      const key = String(rows[i][0] || '').toLowerCase().trim();
+      const value = rows[i][1];
       
-      if (label.includes('ongkir') || label.includes('base')) {
-        const base = Number(rows[i][0]) || 10000;
-        const perKm = Number(rows[i][1]) || 2000;
-        return {
-          base_shipping_cost: base,
-          shipping_cost_per_km: perKm,
-          free_shipping_min_distance: Number(rows[i][2]) || 5
-        };
+      if (key === 'base_shipping_cost' || key.includes('base')) {
+        settings.base_shipping_cost = Number(value) || 10000;
+      }
+      if (key === 'shipping_cost_per_km' || key.includes('per km')) {
+        settings.shipping_cost_per_km = Number(value) || 2000;
+      }
+      if (key === 'free_shipping_min_distance') {
+        settings.free_shipping_min_distance = Number(value) || 5;
       }
     }
     
-    // Fallback: read from row 2
-    if (rows.length > 1) {
-      return {
-        base_shipping_cost: Number(rows[1][0]) || 5000,
-        shipping_cost_per_km: Number(rows[1][1]) || 2000,
-        free_shipping_min_distance: Number(rows[1][2]) || 5
-      };
-    }
-    
-    return { base_shipping_cost: 10000, shipping_cost_per_km: 2000, free_shipping_min_distance: 5 };
+    return {
+      base_shipping_cost: settings.base_shipping_cost || 10000,
+      shipping_cost_per_km: settings.shipping_cost_per_km || 2000,
+      free_shipping_min_distance: settings.free_shipping_min_distance || 5
+    };
     
   } catch (err) {
     return { base_shipping_cost: 10000, shipping_cost_per_km: 2000, free_shipping_min_distance: 5 };
@@ -138,7 +341,7 @@ function getSettings() {
 }
 
 // ==================================================
-// GET MENU
+// GET MENU (with discount support)
 // ==================================================
 function getMenu() {
   try {
@@ -159,14 +362,32 @@ function getMenu() {
         const aktif = r[idx('aktif')];
         return aktif === true || aktif === 'true' || aktif === 1;
       })
-      .map((r, i) => ({
-        id: i + 1,
-        nama: r[idx('nama')] || '',
-        deskripsi: r[idx('deskripsi')] || '',
-        harga: Number(r[idx('harga')]) || 0,
-        kategori: r[idx('kategori')] || 'Lainnya',
-        gambar: r[idx('gambar')] || ''
-      }));
+      .map((r, i) => {
+        const harga = Number(r[idx('harga')]) || 0;
+        const hargaAsli = Number(r[idx('harga_asli')]) || 0;
+        const diskonPersen = Number(r[idx('diskon_persen')]) || 0;
+        
+        // Calculate final price
+        let hargaDiskon = harga;
+        if (hargaAsli > 0 && hargaAsli > harga) {
+          hargaDiskon = harga;
+        } else if (diskonPersen > 0) {
+          hargaDiskon = Math.round(harga * (100 - diskonPersen) / 100);
+        }
+        
+        return {
+          id: i + 1,
+          nama: r[idx('nama')] || '',
+          deskripsi: r[idx('deskripsi')] || '',
+          harga: harga,           // Original selling price
+          harga_asli: hargaAsli,   // Original price (for display)
+          diskon_persen: diskonPersen, // Percentage discount
+          harga_diskon: hargaDiskon,  // Final price after discount
+          kategori: r[idx('kategori')] || 'Lainnya',
+          gambar: r[idx('gambar')] || '',
+          has_discount: hargaAsli > harga || diskonPersen > 0
+        };
+      });
     
     return items;
     
@@ -204,6 +425,39 @@ function getLocation() {
 }
 
 // ==================================================
+// GET CUSTOMER BY PHONE
+// ==================================================
+function getCustomerByPhone(phone) {
+  try {
+    if (!phone) return null;
+    
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sh = ss.getSheetByName(CUSTOMERS_SHEET);
+    
+    if (!sh) return null;
+    
+    const data = sh.getDataRange().getValues();
+    const normalizedPhone = normalizeNumber(phone);
+    
+    for (let i = 1; i < data.length; i++) {
+      const rowPhone = normalizeNumber(String(data[i][0] || ""));
+      if (rowPhone === normalizedPhone) {
+        return {
+          phone: data[i][0],
+          nama: data[i][1] || '',
+          alamat: data[i][2] || '',
+          tipe_diskon: data[i][3] || '',
+          nilai_diskon: Number(data[i][4]) || 0
+        };
+      }
+    }
+  } catch (err) {
+    return null;
+  }
+  return null;
+}
+
+// ==================================================
 // HANDLE ORDER
 // ==================================================
 function handleOrderFromIndex(orderData) {
@@ -211,7 +465,11 @@ function handleOrderFromIndex(orderData) {
     const orderId = orderData.order_id || "";
     const phone = normalizeNumber(orderData.customer_phone || "");
     const name = orderData.customer_name || "Pelanggan";
+    const address = orderData.customer_address || "";
     const items = orderData.items || [];
+    const subtotal = orderData.subtotal || 0;
+    const shippingCost = orderData.shipping_cost || 0;
+    const discount = orderData.discount || 0;
     const total = orderData.total || 0;
     const method = orderData.payment_method || "COD";
     
@@ -221,12 +479,17 @@ function handleOrderFromIndex(orderData) {
     PROCESSED_ORDER_IDS[orderId] = true;
     
     const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-    const sh = ss.getSheetByName(SHEET_ORDERS);
-    const itemsStr = items.map(i => `${i.name} x${i.qty}`).join(', ');
+    const sh = ss.getSheetByName(ORDERS_SHEET);
+    const itemsStr = JSON.stringify(items.map(i => ({ name: i.name, qty: i.qty, price: i.price })));
     
-    sh.appendRow([new Date(), phone, name, itemsStr, total, method, '', orderId]);
+    sh.appendRow([
+      new Date(), phone, name, address, itemsStr, 
+      subtotal, shippingCost, discount, total, method, orderId, 'PENDING'
+    ]);
     
-    const itemsList = items.map(i => `• ${i.name} x${i.qty} = Rp ${(i.price * i.qty).toLocaleString('id-ID')}`).join('\n');
+    const itemsList = items
+      .map(i => `• ${i.name} x${i.qty} = Rp ${(i.price * i.qty).toLocaleString('id-ID')}`)
+      .join('\n');
     
     const msgCustomer = `✅ *Pesanan Diterima!*
 
@@ -235,7 +498,9 @@ Halo Kak *${name}*
 📋 *Detail:*
 ${itemsList}
 
-💰 *Total: Rp ${total.toLocaleString('id-ID')}*
+💰 *Subtotal: Rp ${subtotal.toLocaleString('id-ID')}*
+🚚 *Ongkir: Rp ${shippingCost.toLocaleString('id-ID')}*
+${discount > 0 ? `🎁 *Diskon: Rp ${discount.toLocaleString('id-ID')}\n` : ''}💳 *Total: Rp ${total.toLocaleString('id-ID')}*
 💳 *Metode: ${method}
 
 🆔 Order ID: ${orderId}
@@ -249,12 +514,15 @@ Terima kasih! 🙏`;
 
 👤 *Nama:* ${name}
 📱 *WA:* ${phone}
+📍 *Alamat:* ${address}
 💳 *Metode:* ${method}
 
 📋 *Detail:*
 ${itemsList}
 
-💰 *Total: Rp ${total.toLocaleString('id-ID')}*
+💰 *Subtotal: Rp ${subtotal.toLocaleString('id-ID')}*
+🚚 *Ongkir: Rp ${shippingCost.toLocaleString('id-ID')}*
+${discount > 0 ? `🎁 *Diskon: Rp ${discount.toLocaleString('id-ID')}\n` : ''}💰 *Total: Rp ${total.toLocaleString('id-ID')}*
 🆔 ${orderId}`;
     
     sendWA(ADMIN_PHONE, msgAdmin);
@@ -315,11 +583,11 @@ function handleIncomingWA(phone, text) {
 
 function getCustomer(phone) {
   try {
-    const sh = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(SHEET_CUSTOMERS);
+    const sh = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(CUSTOMERS_SHEET);
     const data = sh.getDataRange().getValues();
     for (let i = 1; i < data.length; i++) {
       if (normalizeNumber(String(data[i][0])) === normalizeNumber(phone)) {
-        return { row: i + 1, phone: data[i][0], name: data[i][1], state: data[i][2] };
+        return { row: i + 1, phone: data[i][0], name: data[i][1], state: data[i][5] };
       }
     }
   } catch (err) {}
@@ -328,16 +596,17 @@ function getCustomer(phone) {
 
 function saveNewCustomer(phone) {
   try {
-    const sh = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(SHEET_CUSTOMERS);
-    sh.appendRow([phone, "", "WAIT_NAME", new Date()]);
+    const sh = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(CUSTOMERS_SHEET);
+    sh.appendRow([phone, "", "", "", "", "WAIT_NAME", new Date(), new Date()]);
   } catch (err) {}
 }
 
 function updateCustomer(row, name, state) {
   try {
-    const sh = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(SHEET_CUSTOMERS);
+    const sh = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(CUSTOMERS_SHEET);
     sh.getRange(row, 2).setValue(name);
-    sh.getRange(row, 3).setValue(state);
+    sh.getRange(row, 6).setValue(state);
+    sh.getRange(row, 8).setValue(new Date());
   } catch (err) {}
 }
 

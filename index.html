@@ -181,6 +181,25 @@
       color: #FF4500;
     }
 
+    .menu-price .original-price {
+      font-size: 14px;
+      color: #999;
+      text-decoration: line-through;
+      margin-right: 8px;
+      font-weight: normal;
+    }
+
+    .menu-price .discount-badge {
+      display: inline-block;
+      background: #dc3545;
+      color: white;
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-left: 4px;
+      font-weight: bold;
+    }
+
     .add-btn {
       background: linear-gradient(135deg, #FF4500 0%, #DC143C 100%);
       color: white;
@@ -386,22 +405,22 @@
     <div id="menu-list" class="menu-container">
      <div class="loading">
       <div class="spinner"></div>
-      <p>MEMUAT MENU...</p>
+      <p>MEMUAN MENU...</p>
      </div>
     </div>
    </main>
    <div class="cart-section" id="cart-section">
-    <h2 class="cart-title">KERANJANG BELANJA <button class="cart-close-btn" id="cart-close-btn">×</button></h2>
+    <h2 class="cart-title">KERANJANG <button class="cart-close-btn" id="cart-close-btn">×</button></h2>
     <div id="cart-items" class="cart-empty">
-     KERANJANG KOSONG
+     KOSONG
     </div>
     <div id="cart-summary" style="display: none;">
-     <div class="summary-row"><span>Subtotal:</span> <span id="subtotal">Rp 0</span>
+     <div class="summary-row"><span>Subtotal</span> <span id="subtotal">Rp 0</span>
      </div>
-     <div class="summary-row"><span>Ongkir:</span> <span id="shipping-cost">Rp 0</span>
+     <div class="summary-row"><span>Ongkir</span> <span id="shipping-cost">Rp 0</span>
      </div>
-     <div class="summary-row total"><span>Total:</span> <span id="total">Rp 0</span>
-     </div><button class="checkout-btn" id="checkout-btn">CHECKOUT</button>
+     <div class="summary-row total"><span>Total</span> <span id="total">Rp 0</span>
+     </div><button class="checkout-btn" id="checkout-btn">PESAN</button>
     </div>
    </div>
   </div>
@@ -425,6 +444,11 @@
     let menuData = [];
     let cartData = {};
     let shippingCost = 0;
+    let customerInfo = null;
+
+    // Get customer phone from URL parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const customerPhone = urlParams.get('phone');
 
     async function loadConfig() {
       try {
@@ -460,10 +484,34 @@
       }
     }
 
+    async function loadCustomerInfo() {
+      if (!customerPhone) {
+        console.log('✓ Tidak ada phone di URL, mode guest');
+        return;
+      }
+      
+      try {
+        const customerUrl = gasUrl + '?action=getCustomer&phone=' + encodeURIComponent(customerPhone);
+        const response = await fetch(customerUrl);
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data && data.nama) {
+            customerInfo = data;
+            console.log('✓ Customer dimuat:', customerInfo.nama);
+          }
+        }
+      } catch (error) {
+        console.warn('⚠ Gagal memuat customer info');
+      }
+    }
+
     async function loadMenu() {
       try {
         // Load config dulu
         await loadConfig();
+        // Load customer info jika ada
+        await loadCustomerInfo();
         
         const menuUrl = gasUrl + '?action=getMenu';
         const response = await fetch(menuUrl);
@@ -483,7 +531,10 @@
           id: String(item.id),
           name: item.nama || '',
           desc: item.deskripsi || '',
-          price: item.harga || 0,
+          price: item.harga_diskon || item.harga || 0,
+          originalPrice: item.harga_asli || 0,
+          discountPercent: item.diskon_persen || 0,
+          hasDiscount: item.has_discount || false,
           category: item.kategori || 'Lainnya',
           image: item.gambar || ''
         }));
@@ -495,12 +546,30 @@
       }
     }
 
+    function formatPrice(price) {
+      return price.toLocaleString('id-ID');
+    }
+
     function renderMenu() {
       const container = document.getElementById('menu-list');
       container.innerHTML = '';
       
       menuData.forEach(item => {
         const hasImage = item.image && item.image.startsWith('data:');
+        
+        // Build price HTML
+        let priceHtml = '';
+        if (item.hasDiscount && item.originalPrice > item.price) {
+          priceHtml = `
+            <span class="original-price">Rp ${formatPrice(item.originalPrice)}</span>
+            <span class="discount-badge">-${item.discountPercent}%</span>
+            <br>
+            <span>Rp ${formatPrice(item.price)}</span>
+          `;
+        } else {
+          priceHtml = `Rp ${formatPrice(item.price)}`;
+        }
+        
         const html = `
           <div class="menu-item">
             <div class="menu-image">
@@ -513,8 +582,8 @@
               <span class="menu-category">${escapeHtml(item.category)}</span>
               <p class="menu-desc">${escapeHtml(item.desc)}</p>
               <div class="menu-footer">
-                <div class="menu-price">Rp ${item.price.toLocaleString('id-ID')}</div>
-                <button class="add-btn" onclick="addToCart('${item.id}', '${item.name}', ${item.price})">+ PESAN</button>
+                <div class="menu-price">${priceHtml}</div>
+                <button class="add-btn" onclick="addToCart('${item.id}', '${item.name}', ${item.price})">+</button>
               </div>
             </div>
           </div>
@@ -565,21 +634,21 @@
           <div class="cart-item">
             <div class="cart-item-info">
               <div class="cart-item-name">${escapeHtml(item.name)}</div>
-              <div class="cart-item-price">Rp ${item.price.toLocaleString('id-ID')}</div>
+              <div class="cart-item-price">${formatPrice(item.price)} × ${item.qty}</div>
             </div>
             <div class="cart-qty">
               <button class="qty-btn" onclick="changeQty('${id}', -1)">−</button>
               <span style="min-width: 30px; text-align: center; font-weight: bold;">${item.qty}</span>
               <button class="qty-btn" onclick="changeQty('${id}', 1)">+</button>
             </div>
-            <button class="cart-remove" onclick="removeFromCart('${id}')">HAPUS</button>
+            <button class="cart-remove" onclick="removeFromCart('${id}')">×</button>
           </div>
         `;
         cartContainer.innerHTML += html;
       });
       
-      document.getElementById('subtotal').textContent = `Rp ${total.toLocaleString('id-ID')}`;
-      document.getElementById('total').textContent = `Rp ${(total + shippingCost).toLocaleString('id-ID')}`;
+      document.getElementById('subtotal').textContent = `${formatPrice(total)}`;
+      document.getElementById('total').textContent = `${formatPrice(total + shippingCost)}`;
       summaryDiv.style.display = 'block';
     }
 
@@ -696,11 +765,12 @@
       `;
 
       const title = document.createElement('h2');
-      title.textContent = 'PILIH METODE PEMBAYARAN';
+      title.textContent = 'PEMBAYARAN';
       title.style.cssText = `
         margin: 0 0 20px 0;
         font-size: 18px;
         color: #1F2937;
+        text-align: center;
       `;
       content.appendChild(title);
 
@@ -725,7 +795,7 @@
       content.appendChild(codBtn);
 
       const qrisBtn = document.createElement('button');
-      qrisBtn.textContent = 'QRIS (Scan Sekarang)';
+      qrisBtn.textContent = 'QRIS';
       qrisBtn.style.cssText = `
         width: 100%;
         padding: 14px;
@@ -797,73 +867,111 @@
       `;
 
       const formTitle = document.createElement('h2');
-      formTitle.textContent = 'Data Pengiriman';
+      formTitle.textContent = 'PENGIRIMAN';
       formTitle.style.cssText = `
         margin: 0 0 20px 0;
         font-size: 18px;
         color: #1F2937;
+        text-align: center;
       `;
       formContent.appendChild(formTitle);
 
-      const nameLabel = document.createElement('label');
-      nameLabel.textContent = 'Nama Lengkap';
-      nameLabel.style.cssText = 'display: block; margin-bottom: 6px; font-size: 14px; font-weight: 600; color: #333;';
-      formContent.appendChild(nameLabel);
+      // Customer info display (if logged in from WhatsApp)
+      if (customerInfo) {
+        const customerDiv = document.createElement('div');
+        customerDiv.style.cssText = `
+          background: #f0fff0;
+          border: 1px solid #90EE90;
+          border-radius: 8px;
+          padding: 12px;
+          margin-bottom: 16px;
+        `;
+        customerDiv.innerHTML = `
+          <p style="margin: 0 0 4px 0; font-weight: 600; color: #1F2937;">${escapeHtml(customerInfo.nama)}</p>
+          <p style="margin: 0; font-size: 13px; color: #666;">${escapeHtml(customerInfo.alamat || 'Alamat belum diisi')}</p>
+        `;
+        formContent.appendChild(customerDiv);
+      }
 
-      const nameInput = document.createElement('input');
-      nameInput.type = 'text';
-      nameInput.style.cssText = `
-        width: 100%;
-        padding: 10px;
-        margin-bottom: 16px;
-        border: 1px solid #ddd;
-        border-radius: 6px;
-        font-size: 14px;
-        box-sizing: border-box;
-      `;
-      formContent.appendChild(nameInput);
+      // Show name/phone/address inputs for guests
+      let nameValue = '';
+      let phoneValue = '';
+      let addressValue = '';
+      
+      if (customerInfo) {
+        nameValue = customerInfo.nama || '';
+        phoneValue = customerInfo.phone || '';
+        addressValue = customerInfo.alamat || '';
+      }
 
-      const phoneLabel = document.createElement('label');
-      phoneLabel.textContent = 'Nomor WhatsApp';
-      phoneLabel.style.cssText = 'display: block; margin-bottom: 6px; font-size: 14px; font-weight: 600; color: #333;';
-      formContent.appendChild(phoneLabel);
+      // Only show inputs if not logged in or no customer info
+      if (!customerInfo) {
+        const nameLabel = document.createElement('label');
+        nameLabel.textContent = 'Nama';
+        nameLabel.style.cssText = 'display: block; margin-bottom: 6px; font-size: 14px; font-weight: 600; color: #333;';
+        formContent.appendChild(nameLabel);
 
-      const phoneInput = document.createElement('input');
-      phoneInput.type = 'tel';
-      phoneInput.style.cssText = `
-        width: 100%;
-        padding: 10px;
-        margin-bottom: 16px;
-        border: 1px solid #ddd;
-        border-radius: 6px;
-        font-size: 14px;
-        box-sizing: border-box;
-      `;
-      formContent.appendChild(phoneInput);
+        const nameInput = document.createElement('input');
+        nameInput.type = 'text';
+        nameInput.value = nameValue;
+        nameInput.style.cssText = `
+          width: 100%;
+          padding: 10px;
+          margin-bottom: 16px;
+          border: 1px solid #ddd;
+          border-radius: 6px;
+          font-size: 14px;
+          box-sizing: border-box;
+        `;
+        nameInput.id = 'customer-name';
+        formContent.appendChild(nameInput);
 
-      const addressLabel = document.createElement('label');
-      addressLabel.textContent = 'Alamat Lengkap';
-      addressLabel.style.cssText = 'display: block; margin-bottom: 6px; font-size: 14px; font-weight: 600; color: #333;';
-      formContent.appendChild(addressLabel);
+        const phoneLabel = document.createElement('label');
+        phoneLabel.textContent = 'WhatsApp';
+        phoneLabel.style.cssText = 'display: block; margin-bottom: 6px; font-size: 14px; font-weight: 600; color: #333;';
+        formContent.appendChild(phoneLabel);
 
-      const addressInput = document.createElement('textarea');
-      addressInput.placeholder = 'Jln. Contoh No. 123, Kelurahan, Kecamatan, Kota';
-      addressInput.style.cssText = `
-        width: 100%;
-        padding: 10px;
-        margin-bottom: 16px;
-        border: 1px solid #ddd;
-        border-radius: 6px;
-        font-size: 14px;
-        box-sizing: border-box;
-        resize: vertical;
-        min-height: 80px;
-        font-family: Arimo, Arial, sans-serif;
-      `;
-      formContent.appendChild(addressInput);
+        const phoneInput = document.createElement('input');
+        phoneInput.type = 'tel';
+        phoneInput.value = phoneValue;
+        phoneInput.style.cssText = `
+          width: 100%;
+          padding: 10px;
+          margin-bottom: 16px;
+          border: 1px solid #ddd;
+          border-radius: 6px;
+          font-size: 14px;
+          box-sizing: border-box;
+        `;
+        phoneInput.id = 'customer-phone';
+        formContent.appendChild(phoneInput);
+
+        const addressLabel = document.createElement('label');
+        addressLabel.textContent = 'Alamat';
+        addressLabel.style.cssText = 'display: block; margin-bottom: 6px; font-size: 14px; font-weight: 600; color: #333;';
+        formContent.appendChild(addressLabel);
+
+        const addressInput = document.createElement('textarea');
+        addressInput.value = addressValue;
+        addressInput.placeholder = 'Jl. Contoh No. 123, Kelurahan, Kecamatan, Kota';
+        addressInput.style.cssText = `
+          width: 100%;
+          padding: 10px;
+          margin-bottom: 16px;
+          border: 1px solid #ddd;
+          border-radius: 6px;
+          font-size: 14px;
+          box-sizing: border-box;
+          resize: vertical;
+          min-height: 80px;
+          font-family: Arimo, Arial, sans-serif;
+        `;
+        addressInput.id = 'customer-address';
+        formContent.appendChild(addressInput);
+      }
 
       const locationLabel = document.createElement('label');
-      locationLabel.textContent = 'Lokasi GPS (Opsional)';
+      locationLabel.textContent = 'Lokasi Pengiriman *WAJIB';
       locationLabel.style.cssText = 'display: block; margin-bottom: 6px; font-size: 14px; font-weight: 600; color: #333;';
       formContent.appendChild(locationLabel);
 
@@ -884,7 +992,7 @@
         align-items: center;
         justify-content: center;
       `;
-      locationDisplay.textContent = 'Tekan tombol untuk ambil lokasi atau isi manual';
+      locationDisplay.textContent = 'Tekan tombol untuk ambil lokasi';
       formContent.appendChild(locationDisplay);
 
       let latitude = null;
@@ -892,7 +1000,7 @@
 
       const shareLocBtn = document.createElement('button');
       shareLocBtn.type = 'button';
-      shareLocBtn.textContent = '📍 Bagikan Lokasi Saat Ini';
+      shareLocBtn.textContent = '📍 Ambil Lokasi';
       shareLocBtn.style.cssText = `
         width: 100%;
         padding: 10px;
@@ -917,12 +1025,10 @@
           locationDisplay.innerHTML = `
             <span style="color: #10B981; font-weight: 600;">✓ Lokasi Terdeteksi</span><br>
             <span style="font-size: 12px; color: #666; margin-top: 4px;">${latitude.toFixed(4)}, ${longitude.toFixed(4)}</span><br>
-            <span style="font-size: 12px; color: #666; margin-top: 4px;">Jarak: ${distance.toFixed(2)} km${shippingCost === 0 ? ' | 🎉 <strong>GRATIS ONGKIR!</strong>' : ' | Ongkir: Rp ' + shippingCost.toLocaleString('id-ID')}</span>
+            <span style="font-size: 12px; color: #666; margin-top: 4px;">Jarak: ${distance.toFixed(2)} km${shippingCost === 0 ? ' | 🎉 GRÁTIS!' : ' | Ongkir: ' + formatPrice(shippingCost)}</span>
           `;
-          shareLocBtn.textContent = '✓ Lokasi Sudah Diambil';
+          shareLocBtn.textContent = '✓ Lokasi Siap';
           shareLocBtn.style.background = '#10B981';
-          manualLocInput.style.display = 'none';
-          manualLocLabel.style.display = 'none';
           updateCart();
         }
       }
@@ -930,7 +1036,7 @@
       shareLocBtn.onclick = (e) => {
         e.preventDefault();
         if (navigator.geolocation) {
-          shareLocBtn.textContent = '⏳ Mengambil lokasi...';
+          shareLocBtn.textContent = '⏳ Mengambil...';
           shareLocBtn.disabled = true;
           navigator.geolocation.getCurrentPosition(
             (position) => {
@@ -941,61 +1047,27 @@
             },
             (error) => {
               locationDisplay.innerHTML = `
-                <span style="color: #c33;">✗ Gagal ambil lokasi</span><br>
-                <span style="font-size: 12px; color: #666;">Izin ditolak atau perangkat tidak support</span>
+                <span style="color: #c33;">✗ Gagal</span><br>
+                <span style="font-size: 12px; color: #666;">Izinkan akses lokasi</span>
               `;
-              shareLocBtn.textContent = '📍 Bagikan Lokasi Saat Ini';
+              shareLocBtn.textContent = '📍 Ambil Lokasi';
               shareLocBtn.style.background = 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)';
               shareLocBtn.disabled = false;
-              manualLocInput.style.display = 'block';
-              manualLocLabel.style.display = 'block';
             }
           );
         } else {
           locationDisplay.innerHTML = `
-            <span style="color: #c33;">✗ Geolocation tidak didukung</span><br>
-            <span style="font-size: 12px; color: #666;">Silakan isi koordinat secara manual</span>
+            <span style="color: #c33;">✗ Tidak didukung</span>
           `;
-          manualLocInput.style.display = 'block';
-          manualLocLabel.style.display = 'block';
         }
       };
       formContent.appendChild(shareLocBtn);
 
-      const manualLocLabel = document.createElement('label');
-      manualLocLabel.textContent = 'Atau Isi Koordinat Manual (Lat, Lon)';
-      manualLocLabel.style.cssText = 'display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600; color: #666;';
-      formContent.appendChild(manualLocLabel);
-
-      const manualLocInput = document.createElement('input');
-      manualLocInput.type = 'text';
-      manualLocInput.placeholder = 'Contoh: -6.2088, 106.8456';
-      manualLocInput.style.cssText = `
-        width: 100%;
-        padding: 10px;
-        margin-bottom: 16px;
-        border: 1px solid #ddd;
-        border-radius: 6px;
-        font-size: 13px;
-        box-sizing: border-box;
-      `;
-      manualLocInput.addEventListener('change', () => {
-        const coords = manualLocInput.value.split(',').map(c => parseFloat(c.trim()));
-        if (coords.length === 2 && !isNaN(coords[0]) && !isNaN(coords[1])) {
-          latitude = coords[0];
-          longitude = coords[1];
-          updateLocationDisplay();
-        } else {
-          locationDisplay.textContent = 'Format koordinat tidak valid. Gunakan: -6.2088, 106.8456';
-        }
-      });
-      formContent.appendChild(manualLocInput);
-
       const btnContainer = document.createElement('div');
-      btnContainer.style.cssText = 'display: flex; gap: 12px;';
+      btnContainer.style.cssText = 'display: flex; gap: 12px; margin-top: 20px;';
 
       const submitBtn = document.createElement('button');
-      submitBtn.textContent = paymentMethod === 'QRIS' ? 'LANJUT KE PEMBAYARAN' : 'KIRIM PESANAN';
+      submitBtn.textContent = paymentMethod === 'QRIS' ? 'BAYAR' : 'PESAN';
       submitBtn.style.cssText = `
         flex: 1;
         padding: 12px;
@@ -1010,49 +1082,51 @@
       `;
       submitBtn.onmouseover = () => submitBtn.style.transform = 'translateY(-2px)';
       submitBtn.onmouseout = () => submitBtn.style.transform = 'translateY(0)';
+      
+      let customerName = nameValue;
+      let customerPhone = phoneValue;
+      let customerAddress = addressValue;
+
       submitBtn.onclick = async () => {
-        const errors = [];
-        if (!nameInput.value.trim()) errors.push('• Nama Lengkap');
-        if (!phoneInput.value.trim()) errors.push('• Nomor WhatsApp');
-        if (!addressInput.value.trim()) errors.push('• Alamat Lengkap');
-        
-        if (errors.length > 0) {
-          const errorMsg = document.createElement('div');
-          errorMsg.style.cssText = `
-            background: #fee;
-            color: #c33;
-            padding: 12px;
-            border-radius: 6px;
-            margin-bottom: 16px;
-            border-left: 4px solid #c33;
-            font-size: 13px;
-            line-height: 1.5;
-          `;
-          errorMsg.innerHTML = '<strong>Harap isi field ini:</strong><br>' + errors.join('<br>');
-          formContent.insertBefore(errorMsg, formContent.firstChild.nextSibling);
-          
-          setTimeout(() => errorMsg.remove(), 4000);
+        // Validate location is required
+        if (!latitude || !longitude || isNaN(latitude) || isNaN(longitude)) {
+          alert('⚠️ Lokasi pengiriman WAJIB!\n\nSilakan tekan tombol "Ambil Lokasi" untuk membagikan lokasi Anda.');
           return;
+        }
+
+        // Get input values if not from customer info
+        if (!customerInfo) {
+          const nameEl = document.getElementById('customer-name');
+          const phoneEl = document.getElementById('customer-phone');
+          const addressEl = document.getElementById('customer-address');
+          
+          if (nameEl) customerName = nameEl.value.trim();
+          if (phoneEl) customerPhone = phoneEl.value.trim();
+          if (addressEl) customerAddress = addressEl.value.trim();
+          
+          if (!customerName || !customerPhone || !customerAddress) {
+            alert('⚠️ Harap lengkapi data: Nama, WhatsApp, dan Alamat');
+            return;
+          }
         }
 
         if (paymentMethod === 'QRIS') {
           submitBtn.disabled = true;
-          submitBtn.textContent = 'Sedang generate QRIS...';
+          submitBtn.textContent = '...';
           
           const total = Object.values(cartData).reduce((sum, item) => sum + (item.price * item.qty), 0);
           const totalWithShipping = total + shippingCost;
           const qrisResult = await generateQRIS(totalWithShipping);
           
           submitBtn.disabled = false;
-          submitBtn.textContent = 'Lanjutkan ke Pembayaran';
           
           if (qrisResult.success) {
-            showQRISPaymentStep(paymentMethod, nameInput.value, phoneInput.value, addressInput.value, latitude, longitude, formModal, qrisResult);
+            showQRISPaymentStep(paymentMethod, customerName, customerPhone, customerAddress, latitude, longitude, formModal, qrisResult);
           } else {
-            alert('Gagal generate QRIS: ' + qrisResult.error);
+            alert('Gagal: ' + qrisResult.error);
           }
         } else {
-          processOrder(paymentMethod, nameInput.value, phoneInput.value, addressInput.value, latitude, longitude, formModal);
+          processOrder(paymentMethod, customerName, customerPhone, customerAddress, latitude, longitude, formModal);
         }
       };
       btnContainer.appendChild(submitBtn);
@@ -1079,7 +1153,6 @@
       formContent.appendChild(btnContainer);
       formModal.appendChild(formContent);
       document.body.appendChild(formModal);
-      nameInput.focus();
     }
 
     function showQRISPaymentStep(paymentMethod, customerName, customerPhone, customerAddress, latitude, longitude, formModal, qrisData) {
@@ -1109,15 +1182,15 @@
         width: 90%;
         box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
         margin: 20px auto;
+        text-align: center;
       `;
 
       const qrisTitle = document.createElement('h2');
-      qrisTitle.textContent = 'Scan QRIS Sekarang';
+      qrisTitle.textContent = 'SCAN QRIS';
       qrisTitle.style.cssText = `
         margin: 0 0 16px 0;
         font-size: 18px;
         color: #1F2937;
-        text-align: center;
       `;
       qrisContent.appendChild(qrisTitle);
 
@@ -1144,18 +1217,18 @@
       `;
       qrisContainer.appendChild(qrImage);
 
+      const total = Object.values(cartData).reduce((sum, item) => sum + (item.price * item.qty), 0);
+      const totalWithShipping = total + shippingCost;
+      
       const amountDiv = document.createElement('div');
       amountDiv.style.cssText = `
         font-size: 14px;
         color: #666;
         line-height: 1.6;
       `;
-      const total = Object.values(cartData).reduce((sum, item) => sum + (item.price * item.qty), 0);
       amountDiv.innerHTML = `
-        <p style="margin: 0; font-weight: 600; color: #1F2937;">Total Pembayaran:</p>
-        <p style="margin: 4px 0 0 0; font-size: 16px; color: #666;">Subtotal: Rp ${total.toLocaleString('id-ID')}</p>
-        <p style="margin: 4px 0 0 0; font-size: 16px; color: #666;">Ongkir: Rp ${shippingCost.toLocaleString('id-ID')}</p>
-        <p style="margin: 8px 0 0 0; font-size: 20px; color: #7C3AED; font-weight: bold;">Rp ${(total + shippingCost).toLocaleString('id-ID')}</p>
+        <p style="margin: 0; font-weight: 600; color: #1F2937;">${formatPrice(totalWithShipping)}</p>
+        <p style="margin: 4px 0 0 0; font-size: 12px; color: #666;">Subtotal: ${formatPrice(total)} + Ongkir: ${formatPrice(shippingCost)}</p>
       `;
       qrisContainer.appendChild(amountDiv);
 
@@ -1165,7 +1238,7 @@
       btnContainer.style.cssText = 'display: flex; gap: 12px;';
 
       const confirmPaymentBtn = document.createElement('button');
-      confirmPaymentBtn.textContent = 'Saya Sudah Bayar';
+      confirmPaymentBtn.textContent = 'SUDAH BAYAR';
       confirmPaymentBtn.style.cssText = `
         flex: 1;
         padding: 12px;
@@ -1210,11 +1283,6 @@
     }
 
     async function processOrder(paymentMethod, customerName, customerPhone, customerAddress, latitude, longitude, formModal, qrisData = null) {
-      if (!customerName.trim() || !customerPhone.trim() || !customerAddress.trim()) {
-        alert('Semua field harus diisi!');
-        return;
-      }
-
       const loadingModal = document.createElement('div');
       loadingModal.style.cssText = `
         position: fixed;
@@ -1256,7 +1324,7 @@
       loadingContent.appendChild(spinner);
 
       const loadingText = document.createElement('p');
-      loadingText.textContent = 'Sedang memproses pesanan...';
+      loadingText.textContent = 'Memproses...';
       loadingText.style.cssText = `
         margin: 0;
         font-size: 16px;
@@ -1277,8 +1345,8 @@
           price: item.price,
           qty: item.qty
         }));
-        const total = Object.values(cartData).reduce((sum, item) => sum + (item.price * item.qty), 0);
-        const totalWithShipping = total + shippingCost;
+        const subtotal = Object.values(cartData).reduce((sum, item) => sum + (item.price * item.qty), 0);
+        const totalWithShipping = subtotal + shippingCost;
 
         let locationString = '';
         if (latitude && longitude && !isNaN(latitude) && !isNaN(longitude)) {
@@ -1302,8 +1370,9 @@
           longitude: longitude,
           location_url: locationString,
           items: items,
-          subtotal: total,
+          subtotal: subtotal,
           shipping_cost: shippingCost,
+          discount: 0,
           total: totalWithShipping,
           payment_method: paymentMethod,
           qris_info: qrisInfo,
@@ -1324,7 +1393,7 @@
         cartData = {};
         updateCart();
 
-        loadingText.textContent = 'Pesanan Berhasil Dikirim!';
+        loadingText.textContent = '✓ PESANAN DIKIRIM!';
         loadingText.style.color = '#10B981';
         spinner.style.display = 'none';
         
@@ -1336,18 +1405,12 @@
           line-height: 1.6;
         `;
         
-        let successMessage = `
+        successContent.innerHTML = `
           <p><strong>Order ID:</strong> ${orderId}</p>
-          <p>Pesan WhatsApp akan dikirim segera</p>
+          <p>WhatsApp akan dikirim ke ${customerPhone}</p>
+          <p style="color: #10B981; font-weight: 600; margin-top: 12px;">Terima kasih!</p>
         `;
         
-        if (paymentMethod === 'QRIS') {
-          successMessage += `<p style="color: #10B981; font-weight: 600;">Pembayaran QRIS Dikonfirmasi!</p>`;
-        }
-        
-        successMessage += `<p style="color: #10B981; font-weight: 600;">Terima kasih atas pesanan Anda!</p>`;
-        
-        successContent.innerHTML = successMessage;
         loadingContent.appendChild(successContent);
 
         const closeBtn = document.createElement('button');
@@ -1372,7 +1435,7 @@
       } catch (error) {
         console.error('Error:', error);
         
-        loadingText.textContent = 'Gagal Mengirim Pesanan';
+        loadingText.textContent = 'GAGAL';
         loadingText.style.color = '#c33';
         spinner.style.display = 'none';
         
@@ -1384,8 +1447,7 @@
           line-height: 1.6;
         `;
         errorContent.innerHTML = `
-          <p>Terjadi kesalahan saat memproses pesanan.</p>
-          <p style="color: #c33; font-weight: 600;">Silakan coba lagi atau hubungi toko.</p>
+          <p>Coba lagi atau hubungi toko.</p>
         `;
         loadingContent.appendChild(errorContent);
 
@@ -1401,10 +1463,7 @@
           font-size: 14px;
           font-weight: 600;
           cursor: pointer;
-          transition: background 0.2s;
         `;
-        closeBtn.onmouseover = () => closeBtn.style.background = '#e0e0e0';
-        closeBtn.onmouseout = () => closeBtn.style.background = '#f0f0f0';
         closeBtn.onclick = () => loadingModal.remove();
         loadingContent.appendChild(closeBtn);
       }
