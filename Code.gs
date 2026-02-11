@@ -60,22 +60,13 @@ function setupMenuSheet(ss) {
     'urutan'          // Sort order
   ];
   
-  sh.getRange('1:1').clear();
-  sh.getRange('1:1', 1, 1, headers.length).setValues([headers]);
+  sh.getRange(1, 1, 1, headers.length).setValues([headers]);
   
   // Format header row
-  sh.getRange('1:1').setFontWeight('bold').setBackground('#FFE0D6');
+  sh.getRange(1, 1, 1, headers.length).setFontWeight('bold').setBackground('#FFE0D6');
   
   // Set column widths
-  sh.setColumnWidth(1, 200);  // nama
-  sh.setColumnWidth(2, 250);  // deskripsi
-  sh.setColumnWidth(3, 100);  // harga
-  sh.setColumnWidth(4, 100);  // harga_asli
-  sh.setColumnWidth(5, 100);  // diskon_persen
-  sh.setColumnWidth(6, 120);  // kategori
-  sh.setColumnWidth(7, 250);  // gambar
-  sh.setColumnWidth(8, 80);   // aktif
-  sh.setColumnWidth(9, 80);   // urutan
+  sh.setColumnWidths([1, 2, 3, 4, 5, 6, 7, 8, 9], [200, 250, 100, 100, 100, 120, 250, 80, 80]);
   
   // Add sample data if empty
   if (sh.getLastRow() === 1) {
@@ -104,21 +95,13 @@ function setupCustomersSheet(ss) {
     'updated_at'     // Updated timestamp
   ];
   
-  sh.getRange('1:1').clear();
-  sh.getRange('1:1', 1, 1, headers.length).setValues([headers]);
+  sh.getRange(1, 1, 1, headers.length).setValues([headers]);
   
   // Format header row
-  sh.getRange('1:1').setFontWeight('bold').setBackground('#E0FFE0');
+  sh.getRange(1, 1, 1, headers.length).setFontWeight('bold').setBackground('#E0FFE0');
   
   // Set column widths
-  sh.setColumnWidth(1, 130);  // phone
-  sh.setColumnWidth(2, 180);  // nama
-  sh.setColumnWidth(3, 300);  // alamat
-  sh.setColumnWidth(4, 100);  // tipe_diskon
-  sh.setColumnWidth(5, 100);  // nilai_diskon
-  sh.setColumnWidth(6, 100);  // state
-  sh.setColumnWidth(7, 150);  // created_at
-  sh.setColumnWidth(8, 150);  // updated_at
+  sh.setColumnWidths([1, 2, 3, 4, 5, 6, 7, 8], [130, 180, 300, 100, 100, 100, 150, 150]);
 }
 
 function setupOrdersSheet(ss) {
@@ -144,25 +127,13 @@ function setupOrdersSheet(ss) {
     'status'          // Order status
   ];
   
-  sh.getRange('1:1').clear();
-  sh.getRange('1:1', 1, 1, headers.length).setValues([headers]);
+  sh.getRange(1, 1, 1, headers.length).setValues([headers]);
   
   // Format header row
-  sh.getRange('1:1').setFontWeight('bold').setBackground('#E0E0FF');
+  sh.getRange(1, 1, 1, headers.length).setFontWeight('bold').setBackground('#E0E0FF');
   
   // Set column widths
-  sh.setColumnWidth(1, 150);  // timestamp
-  sh.setColumnWidth(2, 130);  // phone
-  sh.setColumnWidth(3, 150);  // nama
-  sh.setColumnWidth(4, 250);  // alamat
-  sh.setColumnWidth(5, 300);  // items
-  sh.setColumnWidth(6, 100);  // subtotal
-  sh.setColumnWidth(7, 100);  // ongkir
-  sh.setColumnWidth(8, 100);  // diskon
-  sh.setColumnWidth(9, 100);  // total
-  sh.setColumnWidth(10, 100); // payment_method
-  sh.setColumnWidth(11, 180); // order_id
-  sh.setColumnWidth(12, 100); // status
+  sh.setColumnWidths([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], [150, 130, 150, 250, 300, 100, 100, 100, 100, 100, 180, 100]);
 }
 
 function setupLokasiSheet(ss) {
@@ -179,11 +150,10 @@ function setupLokasiSheet(ss) {
     'longitude'   // Store longitude
   ];
   
-  sh.getRange('1:1').clear();
-  sh.getRange('1:1', 1, 1, headers.length).setValues([headers]);
+  sh.getRange(1, 1, 1, headers.length).setValues([headers]);
   
   // Format header row
-  sh.getRange('1:1').setFontWeight('bold').setBackground('#FFF0E0');
+  sh.getRange(1, 1, 1, headers.length).setFontWeight('bold').setBackground('#FFF0E0');
   
   // Add default data if empty
   if (sh.getLastRow() === 1) {
@@ -205,11 +175,10 @@ function setupPengaturanSheet(ss) {
     'description' // Description
   ];
   
-  sh.getRange('1:1').clear();
-  sh.getRange('1:1', 1, 1, headers.length).setValues([headers]);
+  sh.getRange(1, 1, 1, headers.length).setValues([headers]);
   
   // Format header row
-  sh.getRange('1:1').setFontWeight('bold').setBackground('#FFF0F0');
+  sh.getRange(1, 1, 1, headers.length).setFontWeight('bold').setBackground('#FFF0F0');
   
   // Add default settings if empty
   if (sh.getLastRow() === 1) {
@@ -220,9 +189,7 @@ function setupPengaturanSheet(ss) {
   }
   
   // Set column widths
-  sh.setColumnWidth(1, 200);
-  sh.setColumnWidth(2, 150);
-  sh.setColumnWidth(3, 300);
+  sh.setColumnWidths([1, 2, 3], [200, 150, 300]);
 }
 
 // ==================================================
@@ -500,7 +467,8 @@ ${itemsList}
 
 💰 *Subtotal: Rp ${subtotal.toLocaleString('id-ID')}*
 🚚 *Ongkir: Rp ${shippingCost.toLocaleString('id-ID')}*
-${discount > 0 ? `🎁 *Diskon: Rp ${discount.toLocaleString('id-ID')}\n` : ''}💳 *Total: Rp ${total.toLocaleString('id-ID')}*
+${discount > 0 ? `🎁 *Diskon: Rp ${discount.toLocaleString('id-ID')}
+` : ''}💳 *Total: Rp ${total.toLocaleString('id-ID')}*
 💳 *Metode: ${method}
 
 🆔 Order ID: ${orderId}
@@ -522,7 +490,8 @@ ${itemsList}
 
 💰 *Subtotal: Rp ${subtotal.toLocaleString('id-ID')}*
 🚚 *Ongkir: Rp ${shippingCost.toLocaleString('id-ID')}*
-${discount > 0 ? `🎁 *Diskon: Rp ${discount.toLocaleString('id-ID')}\n` : ''}💰 *Total: Rp ${total.toLocaleString('id-ID')}*
+${discount > 0 ? `🎁 *Diskon: Rp ${discount.toLocaleString('id-ID')}
+` : ''}💰 *Total: Rp ${total.toLocaleString('id-ID')}*
 🆔 ${orderId}`;
     
     sendWA(ADMIN_PHONE, msgAdmin);
