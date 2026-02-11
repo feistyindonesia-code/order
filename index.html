@@ -416,11 +416,13 @@
       qris_fee: 1000,
       gas_url_menu: "https://script.google.com/macros/s/AKfycbxfV-H6PydouLwSnvamJcD2DqCc19I6Ip6URT_EWWl9xw_eG941PnpjU1WdiRxylzhPkA/exec",
       gas_url_bot: "https://script.google.com/macros/s/AKfycbxMRsrY1qzjcAUdnbDgH0cvvyBN38OMCNLB4KWJ7uInQi0k3BuHLPNLLwJRlXgVdk3C/exec",
-      store_latitude: -6.2088,
-      store_longitude: 106.8456,
       base_shipping_cost: 10000,
       shipping_cost_per_km: 2000
     };
+
+    // Lokasi toko akan diambil dari data GAS
+    let store_latitude = -6.2088;
+    let store_longitude = 106.8456;
 
     let menuData = [];
     let cartData = {};
@@ -437,6 +439,34 @@
         
         const data = await response.json();
         
+        // Cek jika response adalah object dengan metadata (termasuk lokasi toko)
+        if (data && typeof data === 'object' && !Array.isArray(data)) {
+          // Ambil lokasi toko dari data response
+          if (data.latitude) store_latitude = parseFloat(data.latitude);
+          if (data.longitude) store_longitude = parseFloat(data.longitude);
+          
+          // Ambil menu items
+          const items = data.items || data.menu || [];
+          if (!Array.isArray(items) || items.length === 0) {
+            document.getElementById('menu-list').innerHTML = '<div class="error-msg">MENU KOSONG. Pastikan data ada di sheet.</div>';
+            return;
+          }
+          
+          menuData = items.map(item => ({
+            id: String(item.id),
+            name: item.nama || '',
+            desc: item.deskripsi || '',
+            price: item.harga || 0,
+            category: item.kategori || 'Lainnya',
+            image: item.gambar || ''
+          }));
+          
+          console.log('Lokasi toko:', store_latitude, store_longitude);
+          renderMenu();
+          return;
+        }
+        
+        // Jika response adalah array langsung
         if (!Array.isArray(data) || data.length === 0) {
           document.getElementById('menu-list').innerHTML = '<div class="error-msg">MENU KOSONG. Pastikan data ada di sheet.</div>';
           return;
