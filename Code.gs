@@ -1,27 +1,22 @@
 // ==================================================
 // FEISTY ORDER - COMBINED SCRIPT
 // ==================================================
-// Includes: Menu API + Bot Handler
-// ==================================================
 
 const SPREADSHEET_ID = '1rGtVLbMwHrceTzJ9Nhu5H4ZTY2wAd_nXOc4LKPXFuLA';
 const MENU_SHEET = 'Menu';
 const LOCATION_SHEET = 'Lokasi';
+const SETTINGS_SHEET = 'Pengaturan';
 
-// ==================================================
-// BOT CONFIG
-// ==================================================
 const DEVICE_ID = "92b2af76-130d-46f0-b811-0874e3407988";
 const WA_API = "https://api.whacenter.com/api/send";
 const SHEET_CUSTOMERS = "customers";
 const SHEET_ORDERS = "orders";
 const ADMIN_PHONE = "6287787655880";
 
-// Anti-duplikat cache
 const PROCESSED_ORDER_IDS = {};
 
 // ==================================================
-// DOGET - MENU API
+// DOGET
 // ==================================================
 function doGet(e) {
   const action = e?.parameter?.action || 'getMenu';
@@ -34,35 +29,29 @@ function doGet(e) {
   else if (action === 'getConfig') result = getConfig();
   else result = { error: 'Invalid action: ' + action };
   
-  // JSONP support
   if (callback) {
     return ContentService
       .createTextOutput(`${callback}(${JSON.stringify(result)})`)
       .setMimeType(ContentService.MimeType.JAVASCRIPT);
   }
   
-  // Return with CORS headers
-  const response = ContentService.createTextOutput(JSON.stringify(result));
-  response.setMimeType(ContentService.MimeType.JSON);
-  return response;
+  return ContentService
+    .createTextOutput(JSON.stringify(result))
+    .setMimeType(ContentService.MimeType.JSON);
 }
 
 // ==================================================
-// DOPOST - ORDER WEBHOOK
+// DOPOST
 // ==================================================
 function doPost(e) {
   try {
     const body = JSON.parse(e.postData?.contents || "{}");
     
-    Logger.log("🔔 Webhook terima:", JSON.stringify(body));
-    
-    // Handle ORDER dari index.html
     if (body.action === 'ORDER') {
       handleOrderFromIndex(body);
       return jsonResponse({ status: 'success' });
     }
     
-    // Handle normal WA messages
     const phone = normalizeNumber(body.number || body.from || body.sender || "");
     const text = (body.message || body.body || body.text || "").trim();
     
@@ -71,7 +60,6 @@ function doPost(e) {
     return jsonResponse({ status: 'ok' });
     
   } catch (err) {
-    Logger.log("❌ Error di doPost:", err.toString());
     return jsonResponse({ status: 'error', message: err.toString() });
   }
 }
@@ -83,16 +71,66 @@ function jsonResponse(data) {
 }
 
 // ==================================================
-// GET CONFIG (LOCATION + SHIPPING)
+// GET CONFIG (LOCATION + ONGKIR)
 // ==================================================
 function getConfig() {
   const location = getLocation();
+  const settings = getSettings();
+  
   return {
-    latitude: location.latitude || -6.2088,
-    longitude: location.longitude || 106.8456,
-    base_shipping_cost: 10000,
-    shipping_cost_per_km: 2000
+    latitude: location.latitude,
+    longitude: location.longitude,
+    nama_toko: location.nama_toko,
+    base_shipping_cost: settings.base_shipping_cost,
+    shipping_cost_per_km: settings.shipping_cost_per_km
   };
+}
+
+// ==================================================
+// GET SETTINGS FROM PENGATURAN SHEET
+// Format:
+// A1=base_shipping_cost, B1=shipping_cost_per_km
+// A2=5000, B2=2000 (Ongkir)
+// A3=1000, B3=87787655880 (Qris Fee)
+// ==================================================
+function getSettings() {
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sh = ss.getSheetByName(SETTINGS_SHEET);
+    
+    if (!sh) {
+      return { base_shipping_cost: 10000, shipping_cost_per_km: 2000 };
+    }
+    
+    const rows = sh.getDataRange().getValues();
+    
+    // Skip header row, read data from row 2 onwards
+    for (let i = 1; i < rows.length; i++) {
+      const label = String(rows[i][0] || '').toLowerCase();
+      
+      if (label.includes('ongkir') || label.includes('base')) {
+        const base = Number(rows[i][0]) || 10000;
+        const perKm = Number(rows[i][1]) || 2000;
+        return {
+          base_shipping_cost: base,
+          shipping_cost_per_km: perKm
+        };
+      }
+    }
+    
+    // Fallback: read from row 2
+    if (rows.length > 1) {
+      return {
+        base_shipping_cost: Number(rows[1][0]) || 5000,
+        shipping_cost_per_km: Number(rows[1][1]) || 2000
+      };
+    }
+    
+    return { base_shipping_cost: 10000, shipping_cost_per_km: 2000 };
+    
+  } catch (err) {
+    return { base_shipping_cost: 10000, shipping_cost_per_km: 2000 };
+  }
 }
 
 // ==================================================
@@ -100,24 +138,36 @@ function getConfig() {
 // ==================================================
 function getMenu() {
   try {
-    const sh = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(MENU_SHEET);
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sh = ss.getSheetByName(MENU_SHEET);
+    
+    if (!sh) return { error: 'Sheet not found: ' + MENU_SHEET };
+    
     const rows = sh.getDataRange().getValues();
-    const header = rows.shift().map(h => h.toString().toLowerCase());
+    
+    if (rows.length === 0) return { error: 'Sheet kosong' };
+    
+    const header = rows.shift().map(h => h.toString().toLowerCase().trim());
     const idx = col => header.indexOf(col);
     
-    return rows
-      .filter(r => r[idx('aktif')] === true)
+    const items = rows
+      .filter(r => {
+        const aktif = r[idx('aktif')];
+        return aktif === true || aktif === 'true' || aktif === 1;
+      })
       .map((r, i) => ({
         id: i + 1,
-        nama: r[idx('nama')],
-        deskripsi: r[idx('deskripsi')],
-        harga: Number(r[idx('harga')]),
-        kategori: r[idx('kategori')],
-        gambar: r[idx('gambar')]
+        nama: r[idx('nama')] || '',
+        deskripsi: r[idx('deskripsi')] || '',
+        harga: Number(r[idx('harga')]) || 0,
+        kategori: r[idx('kategori')] || 'Lainnya',
+        gambar: r[idx('gambar')] || ''
       }));
+    
+    return items;
+    
   } catch (err) {
-    Logger.log("❌ Error getMenu:", err.toString());
-    return [];
+    return { error: err.toString() };
   }
 }
 
@@ -126,11 +176,18 @@ function getMenu() {
 // ==================================================
 function getLocation() {
   try {
-    const sh = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(LOCATION_SHEET);
-    if (!sh) return { latitude: -6.2088, longitude: 106.8456, nama_toko: 'Feisty Kitchen' };
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sh = ss.getSheetByName(LOCATION_SHEET);
+    
+    if (!sh) {
+      return { latitude: -6.2088, longitude: 106.8456, nama_toko: 'Feisty Kitchen' };
+    }
     
     const rows = sh.getDataRange().getValues();
-    if (rows.length < 2) return { latitude: -6.2088, longitude: 106.8456, nama_toko: 'Feisty Kitchen' };
+    
+    if (rows.length < 2) {
+      return { latitude: -6.2088, longitude: 106.8456, nama_toko: 'Feisty Kitchen' };
+    }
     
     return {
       nama_toko: String(rows[1][0] || 'Feisty Kitchen'),
@@ -138,13 +195,12 @@ function getLocation() {
       longitude: Number(rows[1][2]) || 106.8456
     };
   } catch (err) {
-    Logger.log("❌ Error getLocation:", err.toString());
     return { latitude: -6.2088, longitude: 106.8456, nama_toko: 'Feisty Kitchen' };
   }
 }
 
 // ==================================================
-// HANDLE ORDER FROM INDEX.HTML
+// HANDLE ORDER
 // ==================================================
 function handleOrderFromIndex(orderData) {
   try {
@@ -154,50 +210,25 @@ function handleOrderFromIndex(orderData) {
     const items = orderData.items || [];
     const total = orderData.total || 0;
     const method = orderData.payment_method || "COD";
-    const address = orderData.customer_address || "";
     
-    Logger.log("📋 Order diterima:", { orderId, phone, name, total, method });
+    if (!phone) return;
     
-    if (!phone) {
-      Logger.log("❌ Error: Nomor WA kosong");
-      return;
-    }
-    
-    // Cek duplikat dengan orderId
-    if (orderId && PROCESSED_ORDER_IDS[orderId]) {
-      Logger.log("⚠️ DUPLIKAT DI CACHE - ORDER ID:", orderId);
-      return;
-    }
-    
+    if (orderId && PROCESSED_ORDER_IDS[orderId]) return;
     PROCESSED_ORDER_IDS[orderId] = true;
     
-    // Save ke sheet
-    const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(SHEET_ORDERS);
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sh = ss.getSheetByName(SHEET_ORDERS);
     const itemsStr = items.map(i => `${i.name} x${i.qty}`).join(', ');
     
-    sheet.appendRow([
-      new Date(),
-      phone,
-      name,
-      itemsStr,
-      total,
-      method,
-      address,
-      orderId
-    ]);
+    sh.appendRow([new Date(), phone, name, itemsStr, total, method, '', orderId]);
     
-    Logger.log("✅ Order saved:", orderId);
-    
-    // Kirim ke customer
-    const itemsList = items
-      .map(i => `• ${i.name} x${i.qty} = Rp ${(i.price * i.qty).toLocaleString('id-ID')}`)
-      .join('\n');
+    const itemsList = items.map(i => `• ${i.name} x${i.qty} = Rp ${(i.price * i.qty).toLocaleString('id-ID')}`).join('\n');
     
     const msgCustomer = `✅ *Pesanan Diterima!*
 
-Halo Kak *${name}* 🎉
+Halo Kak *${name}*
 
-📋 *Detail Pesanan:*
+📋 *Detail:*
 ${itemsList}
 
 💰 *Total: Rp ${total.toLocaleString('id-ID')}*
@@ -205,13 +236,12 @@ ${itemsList}
 
 🆔 Order ID: ${orderId}
 
-Terima kasih! Pesanan Anda akan kami proses segera 🙏`;
+Terima kasih! 🙏`;
     
     sendWA(phone, msgCustomer);
     Utilities.sleep(1000);
     
-    // Kirim ke admin
-    const msgAdmin = `🔔 *PESANAN BARU MASUK!*
+    const msgAdmin = `🔔 *PESANAN BARU*
 
 👤 *Nama:* ${name}
 📱 *WA:* ${phone}
@@ -221,17 +251,11 @@ Terima kasih! Pesanan Anda akan kami proses segera 🙏`;
 ${itemsList}
 
 💰 *Total: Rp ${total.toLocaleString('id-ID')}*
-🆔 Order ID: ${orderId}
-⏰ ${new Date().toLocaleString('id-ID')}
-
-Segera hubungi customer!`;
+🆔 ${orderId}`;
     
     sendWA(ADMIN_PHONE, msgAdmin);
-    Logger.log("✅ ✅ ✅ ORDER SELESAI ✅ ✅ ✅");
     
-  } catch (err) {
-    Logger.log("❌ Error handleOrderFromIndex:", err.toString());
-  }
+  } catch (err) {}
 }
 
 // ==================================================
@@ -239,14 +263,7 @@ Segera hubungi customer!`;
 // ==================================================
 function sendWA(to, message) {
   try {
-    const payload = {
-      device_id: DEVICE_ID,
-      number: to,
-      message: message
-    };
-    
-    Logger.log("📤 WA to:", to);
-    
+    const payload = { device_id: DEVICE_ID, number: to, message: message };
     const options = {
       method: "post",
       contentType: "application/json",
@@ -255,18 +272,14 @@ function sendWA(to, message) {
       timeout: 30
     };
     
-    const response = UrlFetchApp.fetch(WA_API, options);
-    Logger.log("📥 WA Response:", response.getResponseCode());
-    return response.getResponseCode();
-    
+    return UrlFetchApp.fetch(WA_API, options).getResponseCode();
   } catch (err) {
-    Logger.log("❌ Error sendWA:", err.toString());
     return 0;
   }
 }
 
 // ==================================================
-// HANDLE INCOMING WA (CHATBOT)
+// CHATBOT
 // ==================================================
 function handleIncomingWA(phone, text) {
   try {
@@ -274,70 +287,54 @@ function handleIncomingWA(phone, text) {
     
     if (!customer) {
       saveNewCustomer(phone);
-      sendWA(phone, msgAskName());
+      sendWA(phone, "👋 *Selamat Datang di Feisty*\n\nBoleh nama Kakak?");
       return;
     }
     
     if (customer.state === "WAIT_NAME") {
       updateCustomer(customer.row, text, "MENU");
-      sendWA(phone, msgMenu(text));
+      sendWA(phone, `✨ *Halo ${text}*!\n\n1. Order Menu\n2. Info Promo`);
       return;
     }
     
     if (customer.state === "MENU") {
-      if (isOrder(text)) {
-        sendWA(phone, msgOrderLink(customer.name, phone));
-        return;
+      if (text === "1" || text.toLowerCase().includes("order")) {
+        sendWA(phone, "🛒 https://feistyindonesia-code.github.io/order/");
+      } else if (text === "2" || text.toLowerCase().includes("promo")) {
+        sendWA(phone, "🎉 *Promo Soon!*");
+      } else {
+        sendWA(phone, "Ketik *1* atau *2*");
       }
-      if (isPromo(text)) {
-        sendWA(phone, msgPromo(customer.name));
-        return;
-      }
-      sendWA(phone, msgInvalidMenu(customer.name));
     }
-  } catch (err) {
-    Logger.log("❌ Error handleIncomingWA:", err.toString());
-  }
+  } catch (err) {}
 }
 
-// ==================================================
-// CUSTOMER DATABASE
-// ==================================================
 function getCustomer(phone) {
   try {
-    const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(SHEET_CUSTOMERS);
-    const data = sheet.getDataRange().getValues();
-    
+    const sh = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(SHEET_CUSTOMERS);
+    const data = sh.getDataRange().getValues();
     for (let i = 1; i < data.length; i++) {
       if (normalizeNumber(String(data[i][0])) === normalizeNumber(phone)) {
         return { row: i + 1, phone: data[i][0], name: data[i][1], state: data[i][2] };
       }
     }
-  } catch (err) {
-    Logger.log("❌ Error getCustomer:", err.toString());
-  }
+  } catch (err) {}
   return null;
 }
 
 function saveNewCustomer(phone) {
   try {
-    const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(SHEET_CUSTOMERS);
-    sheet.appendRow([phone, "", "WAIT_NAME", new Date(), new Date()]);
-    Logger.log("✅ New customer:", phone);
-  } catch (err) {
-    Logger.log("❌ Error saveNewCustomer:", err.toString());
-  }
+    const sh = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(SHEET_CUSTOMERS);
+    sh.appendRow([phone, "", "WAIT_NAME", new Date()]);
+  } catch (err) {}
 }
 
 function updateCustomer(row, name, state) {
   try {
-    const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(SHEET_CUSTOMERS);
-    sheet.getRange(row, 2).setValue(name);
-    sheet.getRange(row, 3).setValue(state);
-    sheet.getRange(row, 5).setValue(new Date());
-  } catch (err) {
-    Logger.log("❌ Error updateCustomer:", err.toString());
-  }
+    const sh = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(SHEET_CUSTOMERS);
+    sh.getRange(row, 2).setValue(name);
+    sh.getRange(row, 3).setValue(state);
+  } catch (err) {}
 }
 
 // ==================================================
@@ -349,58 +346,4 @@ function normalizeNumber(num) {
   if (phone.startsWith("0")) phone = "62" + phone.slice(1);
   if (!phone.startsWith("62")) phone = "62" + phone;
   return phone;
-}
-
-function isOrder(text) {
-  const t = text.toLowerCase().trim();
-  return t === "1" || t.includes("order") || t.includes("pesan") || t.includes("beli");
-}
-
-function isPromo(text) {
-  const t = text.toLowerCase().trim();
-  return t === "2" || t.includes("promo") || t.includes("diskon");
-}
-
-// ==================================================
-// CHATBOT MESSAGES
-// ==================================================
-function msgAskName() {
-  return `👋 *Selamat Datang di Feisty*
-
-Boleh kami tahu *nama Kakak* untuk melanjutkan? 😊`;
-}
-
-function msgMenu(name) {
-  return `✨ *Halo Kak ${name}!* ✨
-
-Silakan pilih:
-1️⃣ Order Menu  
-2️⃣ Info Promo`;
-}
-
-function msgInvalidMenu(name) {
-  return `⚠️ *Maaf Kak ${name}*
-
-Pilihan tidak dikenali 🙏  
-Silakan ketik *1* atau *2*.`;
-}
-
-function msgOrderLink(name, phone) {
-  return `🛒 *Order Online Feisty*
-
-Halo Kak *${name}* 😊  
-Silakan lanjutkan pemesanan melalui app 📱
-
-💳 Pembayaran:
-• QRIS (TemanQRIS)
-• COD (Bayar di Tempat)`;
-}
-
-function msgPromo(name) {
-  return `🎉 *Promo Feisty*
-
-Halo Kak *${name}* 😄  
-Promo menarik segera hadir 🔥
-
-Stay tuned ya! 👍`;
 }
