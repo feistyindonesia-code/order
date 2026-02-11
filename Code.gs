@@ -254,25 +254,35 @@ function doGet(e) {
 // ==================================================
 function doPost(e) {
   try {
-    // Handle both JSON and FormData
-    let body;
+    let body = {};
     const contentType = e?.postData?.contentType || '';
+    const postData = e?.postData?.contents || '';
     
     if (contentType.includes('application/json')) {
-      body = JSON.parse(e.postData?.contents || '{}');
+      body = JSON.parse(postData);
     } else if (contentType.includes('application/x-www-form-urlencoded')) {
-      // Parse form data
-      const params = e.postData?.contents?.split('&') || [];
-      body = {};
+      // Parse URL-encoded data
+      const params = postData.split('&');
       params.forEach(p => {
         const [key, value] = p.split('=');
-        if (key && value) {
-          body[decodeURIComponent(key)] = decodeURIComponent(value.replace(/\+/g, ' '));
+        if (key) {
+          body[decodeURIComponent(key)] = decodeURIComponent((value || '').replace(/\+/g, ' '));
         }
       });
     } else {
       // Try parsing as JSON anyway
-      body = JSON.parse(e.postData?.contents || '{}');
+      try {
+        body = JSON.parse(postData);
+      } catch (err) {
+        // Try URL-encoded anyway
+        const params = postData.split('&');
+        params.forEach(p => {
+          const [key, value] = p.split('=');
+          if (key) {
+            body[decodeURIComponent(key)] = decodeURIComponent((value || '').replace(/\+/g, ' '));
+          }
+        });
+      }
     }
     
     if (body.action === 'ORDER') {

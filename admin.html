@@ -683,19 +683,19 @@
     
     async function updateOrderStatus(orderId, newStatus) {
       try {
-        // Use no-cors mode to bypass CORS for POST requests
-        const formData = new FormData();
-        formData.append('action', 'updateStatus');
-        formData.append('order_id', orderId);
-        formData.append('status', newStatus);
+        // Use URL-encoded data to bypass CORS
+        const params = new URLSearchParams();
+        params.append('action', 'updateStatus');
+        params.append('order_id', orderId);
+        params.append('status', newStatus);
         
         await fetch(GAS_URL, {
           method: 'POST',
-          body: formData,
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: params.toString(),
           mode: 'no-cors'
         });
         
-        // With no-cors, we can't read response, but request is sent
         showToast('Status dikirim!', 'success');
         loadOrders();
         closeModal();
