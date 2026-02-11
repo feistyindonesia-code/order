@@ -435,12 +435,22 @@
         
         if (response.ok) {
           const data = await response.json();
-          if (data.latitude) store_latitude = parseFloat(data.latitude);
-          if (data.longitude) store_longitude = parseFloat(data.longitude);
-          console.log('Lokasi toko dimuat:', store_latitude, store_longitude);
+          // Validasi dan parsing latitude/longitude
+          const lat = parseFloat(data.latitude);
+          const lon = parseFloat(data.longitude);
+          
+          if (!isNaN(lat) && !isNaN(lon) && lat !== 0 && lon !== 0) {
+            store_latitude = lat;
+            store_longitude = lon;
+            console.log('✓ Lokasi toko dimuat:', store_latitude, store_longitude);
+          } else {
+            console.warn('⚠ Lokasi toko tidak valid, menggunakan default Jakarta');
+          }
+        } else {
+          console.warn('⚠ Gagal memuat lokasi, response tidak OK');
         }
       } catch (error) {
-        console.warn('Gagal memuat lokasi toko, menggunakan default');
+        console.warn('⚠ Gagal memuat lokasi toko:', error.message);
       }
     }
 
@@ -887,8 +897,8 @@
       shareLocBtn.onmouseout = () => shareLocBtn.style.transform = 'translateY(0)';
       
       function updateLocationDisplay() {
-        if (latitude && longitude) {
-          const distance = calculateDistance(config.store_latitude, config.store_longitude, latitude, longitude);
+        if (latitude && longitude && !isNaN(latitude) && !isNaN(longitude)) {
+          const distance = calculateDistance(store_latitude, store_longitude, latitude, longitude);
           shippingCost = calculateShippingCost(distance);
           
           locationDisplay.innerHTML = `
@@ -1258,7 +1268,7 @@
         const totalWithShipping = total + shippingCost;
 
         let locationString = '';
-        if (latitude && longitude) {
+        if (latitude && longitude && !isNaN(latitude) && !isNaN(longitude)) {
           locationString = `https://maps.google.com/?q=${latitude},${longitude}`;
         }
 
