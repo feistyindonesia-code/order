@@ -683,24 +683,22 @@
     
     async function updateOrderStatus(orderId, newStatus) {
       try {
-        const response = await fetch(GAS_URL, {
+        // Use no-cors mode to bypass CORS for POST requests
+        const formData = new FormData();
+        formData.append('action', 'updateStatus');
+        formData.append('order_id', orderId);
+        formData.append('status', newStatus);
+        
+        await fetch(GAS_URL, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'updateStatus',
-            order_id: orderId,
-            status: newStatus
-          })
+          body: formData,
+          mode: 'no-cors'
         });
         
-        const result = await response.json();
-        if (result.success) {
-          showToast('Status berhasil diubah!', 'success');
-          loadOrders();
-          closeModal();
-        } else {
-          showToast('Gagal mengubah status', 'error');
-        }
+        // With no-cors, we can't read response, but request is sent
+        showToast('Status dikirim!', 'success');
+        loadOrders();
+        closeModal();
       } catch (error) {
         showToast('Error: ' + error.message, 'error');
       }

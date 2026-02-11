@@ -254,7 +254,26 @@ function doGet(e) {
 // ==================================================
 function doPost(e) {
   try {
-    const body = JSON.parse(e.postData?.contents || "{}");
+    // Handle both JSON and FormData
+    let body;
+    const contentType = e?.postData?.contentType || '';
+    
+    if (contentType.includes('application/json')) {
+      body = JSON.parse(e.postData?.contents || '{}');
+    } else if (contentType.includes('application/x-www-form-urlencoded')) {
+      // Parse form data
+      const params = e.postData?.contents?.split('&') || [];
+      body = {};
+      params.forEach(p => {
+        const [key, value] = p.split('=');
+        if (key && value) {
+          body[decodeURIComponent(key)] = decodeURIComponent(value.replace(/\+/g, ' '));
+        }
+      });
+    } else {
+      // Try parsing as JSON anyway
+      body = JSON.parse(e.postData?.contents || '{}');
+    }
     
     if (body.action === 'ORDER') {
       handleOrderFromIndex(body);
