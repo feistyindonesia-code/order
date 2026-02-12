@@ -33,12 +33,55 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      position: relative;
     }
 
     header img {
       height: 70px;
       width: auto;
       object-fit: contain;
+    }
+
+    .cart-toggle-btn {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: linear-gradient(135deg, #FF4500 0%, #DC143C 100%);
+      color: white;
+      border: none;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      font-size: 24px;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(255, 69, 0, 0.4);
+      z-index: 998;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .cart-toggle-btn:hover {
+      transform: scale(1.1);
+      box-shadow: 0 6px 20px rgba(255, 69, 0, 0.5);
+    }
+
+    .cart-badge {
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      background: #dc3545;
+      color: white;
+      font-size: 12px;
+      font-weight: bold;
+      min-width: 20px;
+      height: 20px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 6px;
     }
 
     main {
@@ -371,7 +414,7 @@
     .summary-row {
       display: flex;
       justify-content: space-between;
-      margin: 6px 0;
+      margin: 6px 15px;
       font-size: 15px;
       color: #4b5563;
     }
@@ -423,6 +466,10 @@
   <div id="app-wrapper">
    <header><img src="https://imgur.com/E9ya4d5.png" alt="Logo" loading="lazy" onerror="console.error('Logo failed to load:', this.src); this.style.display='none';">
    </header>
+   <button class="cart-toggle-btn" id="cart-toggle-btn" onclick="toggleCart()">
+    <span style="font-size: 24px;">🛒</span>
+    <span class="cart-badge" id="cart-badge" style="display: none;">0</span>
+   </button>
    <main>
     <div id="menu-list" class="menu-container">
      <div class="loading">
@@ -639,6 +686,16 @@
       const items = Object.entries(cartData);
       const cartContainer = document.getElementById('cart-items');
       const summaryDiv = document.getElementById('cart-summary');
+      const badge = document.getElementById('cart-badge');
+      
+      // Update badge count
+      const totalItems = Object.values(cartData).reduce((sum, item) => sum + item.qty, 0);
+      if (totalItems > 0) {
+        badge.textContent = totalItems;
+        badge.style.display = 'flex';
+      } else {
+        badge.style.display = 'none';
+      }
       
       if (items.length === 0) {
         cartContainer.innerHTML = '<div class="cart-empty">Keranjang kosong</div>';
@@ -1505,6 +1562,15 @@
     document.getElementById('cart-close-btn').addEventListener('click', () => {
       document.getElementById('cart-section').classList.remove('open');
     });
+
+    function toggleCart() {
+      const cartSection = document.getElementById('cart-section');
+      if (Object.keys(cartData).length === 0) {
+        alert('Keranjang kosong!');
+        return;
+      }
+      cartSection.classList.toggle('open');
+    }
 
     loadMenu();
   </script>
