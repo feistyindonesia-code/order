@@ -106,7 +106,7 @@ function handleOrderFromCanva(orderData) {
       return; // STOP - jangan proses
     }
 
-    // ✅ JUGA CEK CACHE (untuk response cepat)
+    // ✅ JUGAN CEK CACHE (untuk response cepat)
     if (PROCESSED_ORDER_IDS[orderId]) {
       Logger.log("⚠️ DUPLIKAT DI CACHE - ORDER ID:", orderId);
       return; // STOP - jangan proses
@@ -266,7 +266,7 @@ function handleIncomingWA(phone, text) {
 
     if (customer.state === "MENU") {
       if (isOrder(text)) {
-        sendWA(phone, msgOrderLink(customer.name, phone));
+        sendWA(phone, msgOrderLink(customer.name));
         return;
       }
 
@@ -379,7 +379,7 @@ Pilihan tidak dikenali 🙏
 Silakan ketik *1* atau *2*.`;
 }
 
-function msgOrderLink(name, phone) {
+function msgOrderLink(name) {
   return `🛒 *Order Online Feisty*
 
 Halo Kak *${name}* 😊  
@@ -387,7 +387,7 @@ Silakan lanjutkan pemesanan melalui app kami 📱
 
 💳 Pembayaran:
 • QRIS (TemanQRIS)
-• COD (Bayar di Tempat)`;
+• COD (Bayar di tempat)`;
 }
 
 function msgPromo(name) {
@@ -398,4 +398,3 @@ Promo menarik segera hadir 🔥
 
 Stay tuned ya! 👍`;
 }
-
