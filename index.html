@@ -284,8 +284,9 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 12px 0;
+      padding: 16px 0;
       border-bottom: 1px solid #f0f0f0;
+      gap: 12px;
     }
 
     .cart-item:last-child {
@@ -294,37 +295,39 @@
 
     .cart-item-info {
       flex: 1;
+      min-width: 0;
     }
 
     .cart-item-name {
       font-weight: 600;
       color: #1F2937;
-      font-size: 14px;
+      font-size: 15px;
+      margin-bottom: 4px;
     }
 
     .cart-item-price {
       color: #FF4500;
       font-size: 14px;
       font-weight: bold;
-      margin-top: 2px;
     }
 
     .cart-qty {
       display: flex;
       align-items: center;
-      gap: 8px;
-      margin: 0 16px;
+      gap: 10px;
+      margin: 0 8px;
     }
 
     .qty-btn {
       background: #f0f0f0;
       border: none;
-      width: 28px;
-      height: 28px;
-      border-radius: 4px;
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
       cursor: pointer;
       font-weight: bold;
       color: #FF4500;
+      font-size: 16px;
       transition: background 0.2s;
     }
 
