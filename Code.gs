@@ -256,9 +256,9 @@ function handleIncomingWA(phone, text) {
     
     // Check for timeout
     if (customer.state === STATE_TIMEOUT) {
-      logToSheet("Customer in timeout state, resetting...", "");
-      updateCustomerState(phone, STATE_MENU);
-      sendWA(phone, msgBotMenu(customer.name));
+      logToSheet("Customer in timeout state, resetting to WAIT_NAME...", "");
+      updateCustomerState(phone, STATE_WAIT_NAME);
+      sendWA(phone, msgAskName());
       return;
     }
     
@@ -267,9 +267,9 @@ function handleIncomingWA(phone, text) {
       const lastActivity = new Date(customer.last_activity).getTime();
       const now = Date.now();
       if (now - lastActivity > BOT_TIMEOUT_MS) {
-        logToSheet("Bot timeout (15 min), resetting...", "");
-        updateCustomerState(phone, STATE_MENU);
-        sendWA(phone, msgTimeout(customer.name));
+        logToSheet("Bot timeout (15 min), resetting to WAIT_NAME...", "");
+        updateCustomerState(phone, STATE_WAIT_NAME);
+        sendWA(phone, msgAskName());
         return;
       }
     }
@@ -446,9 +446,11 @@ ATURAN RESPONS:
 1. Jawab pertanyaan customer dengan sopan dan helpful
 2. Gunakan pengetahuan dari knowledge base di atas
 3. Jika customer ingin memesan, arahkan ke fitur Order (ketik 1)
-4. Jika pertanyaan di luar pengetahuan, katakan bahwa akan dihubungkan dengan admin
-5. Respons maksimal 300 karakter
-6. Selalu gunakan bahasa Indonesia yang casual dan ramah
+4. JANGAN PERNAH bilang akan menghubungkan ke admin atau CS manusia
+5. JANGAN PERNAH bilang "maaf saya tidak tahu" atau "saya akan hubungkan dengan admin"
+6. Jika benar-benar tidak bisa menjawab, berikan response yang helpful tapi JANGAN sebut admin
+7. Respons maksimal 300 karakter
+8. Selalu gunakan bahasa Indonesia yang casual dan ramah
 
 Pertanyaan customer: ${userMessage}`;
 
@@ -824,7 +826,7 @@ function checkBotTimeouts() {
       const state = data[i][5] || "";
       const lastActivity = data[i][6];
       
-      // Only check customers in active states (not TIMEOUT or MENU)
+      // Only check customers in active states (not WAIT_NAME or TIMEOUT)
       if (state === STATE_ORDER || state === STATE_CS_CHAT) {
         if (lastActivity) {
           const lastTime = new Date(lastActivity).getTime();
@@ -832,11 +834,10 @@ function checkBotTimeouts() {
             const phone = data[i][0];
             const name = data[i][1] || 'Kak';
             
-            // Send timeout message
-            updateCustomerState(phone, STATE_MENU);
-            sendWA(phone, msgTimeout(name));
+            // Reset to WAIT_NAME (initial state)
+            updateCustomerState(phone, STATE_WAIT_NAME);
             
-            logToSheet("Timeout sent to:", phone);
+            logToSheet("Timeout reset to WAIT_NAME for:", phone);
           }
         }
       }
