@@ -362,7 +362,7 @@
 
     .cart-summary {
       margin-top: 0;
-      padding: 20px 24px 24px 24px;
+      padding: 16px 20px 20px 20px;
       border-top: 2px solid #FF4500;
       flex-shrink: 0;
       background: linear-gradient(to bottom, #fff 0%, #fff9f5 100%);
@@ -430,9 +430,10 @@
       <p>MEMUAN MENU...</p>
      </div>
     </div>
-   </main>`n    <div class="cart-overlay" id="cart-overlay"></div>
+   </main>
+   <div class="cart-overlay" id="cart-overlay"></div>
    <div class="cart-section" id="cart-section">
-    <h2 class="cart-title">KERANJANG <button class="cart-close-btn" id="cart-close-btn">×</button></h2>
+    <h2 class="cart-title">KERANJANG <button class="cart-close-btn" id="cart-close-btn">x</button></h2>
     <div id="cart-items" class="cart-empty">
      KOSONG
     </div>
@@ -497,18 +498,18 @@
             config.free_shipping_min_distance = parseFloat(data.free_shipping_min_distance);
           }
           
-          console.log('✓ Config dimuat dari GAS');
+          console.log('Config dimuat dari GAS');
           console.log('  Lokasi:', store_latitude, store_longitude);
           console.log('  Ongkir:', config.base_shipping_cost, '+', config.shipping_cost_per_km, '/km');
         }
       } catch (error) {
-        console.warn('⚠ Gagal memuat config dari GAS, menggunakan default');
+        console.warn('Gagal memuat config dari GAS, menggunakan default');
       }
     }
 
     async function loadCustomerInfo() {
       if (!customerPhone) {
-        console.log('✓ Tidak ada phone di URL, mode guest');
+        console.log('Tidak ada phone di URL, mode guest');
         return;
       }
       
@@ -520,11 +521,11 @@
           const data = await response.json();
           if (data && data.nama) {
             customerInfo = data;
-            console.log('✓ Customer dimuat:', customerInfo.nama);
+            console.log('Customer dimuat:', customerInfo.nama);
           }
         }
       } catch (error) {
-        console.warn('⚠ Gagal memuat customer info');
+        console.warn('Gagal memuat customer info');
       }
     }
 
@@ -656,14 +657,14 @@
           <div class="cart-item">
             <div class="cart-item-info">
               <div class="cart-item-name">${escapeHtml(item.name)}</div>
-              <div class="cart-item-price">${formatPrice(item.price)} × ${item.qty}</div>
+              <div class="cart-item-price">${formatPrice(item.price)} x ${item.qty}</div>
             </div>
             <div class="cart-qty">
-              <button class="qty-btn" onclick="changeQty('${id}', -1)">−</button>
+              <button class="qty-btn" onclick="changeQty('${id}', -1)">-</button>
               <span style="min-width: 30px; text-align: center; font-weight: bold;">${item.qty}</span>
               <button class="qty-btn" onclick="changeQty('${id}', 1)">+</button>
             </div>
-            <button class="cart-remove" onclick="removeFromCart('${id}')">×</button>
+            <button class="cart-remove" onclick="removeFromCart('${id}')">x</button>
           </div>
         `;
         cartContainer.innerHTML += html;
@@ -891,8 +892,8 @@
       const formTitle = document.createElement('h2');
       formTitle.textContent = 'PENGIRIMAN';
       formTitle.style.cssText = `
-        margin: 0 0 20px 0;
-        font-size: 18px;
+        margin: 0 0 20px font-size:  0;
+       18px;
         color: #1F2937;
         text-align: center;
       `;
@@ -1022,7 +1023,7 @@
 
       const shareLocBtn = document.createElement('button');
       shareLocBtn.type = 'button';
-      shareLocBtn.textContent = '📍 Ambil Lokasi';
+      shareLocBtn.textContent = 'Ambil Lokasi';
       shareLocBtn.style.cssText = `
         width: 100%;
         padding: 10px;
@@ -1045,11 +1046,11 @@
           shippingCost = calculateShippingCost(distance);
           
           locationDisplay.innerHTML = `
-            <span style="color: #10B981; font-weight: 600;">✓ Lokasi Terdeteksi</span><br>
+            <span style="color: #10B981; font-weight: 600;">Lokasi Terdeteksi</span><br>
             <span style="font-size: 12px; color: #666; margin-top: 4px;">${latitude.toFixed(4)}, ${longitude.toFixed(4)}</span><br>
-            <span style="font-size: 12px; color: #666; margin-top: 4px;">Jarak: ${distance.toFixed(2)} km${shippingCost === 0 ? ' | 🎉 GRÁTIS!' : ' | Ongkir: ' + formatPrice(shippingCost)}</span>
+            <span style="font-size: 12px; color: #666; margin-top: 4px;">Jarak: ${distance.toFixed(2)} km${shippingCost === 0 ? ' | GRAtIS!' : ' | Ongkir: ' + formatPrice(shippingCost)}</span>
           `;
-          shareLocBtn.textContent = '✓ Lokasi Siap';
+          shareLocBtn.textContent = 'Lokasi Siap';
           shareLocBtn.style.background = '#10B981';
           updateCart();
         }
@@ -1058,7 +1059,7 @@
       shareLocBtn.onclick = (e) => {
         e.preventDefault();
         if (navigator.geolocation) {
-          shareLocBtn.textContent = '⏳ Mengambil...';
+          shareLocBtn.textContent = 'Mengambil...';
           shareLocBtn.disabled = true;
           navigator.geolocation.getCurrentPosition(
             (position) => {
@@ -1069,17 +1070,17 @@
             },
             (error) => {
               locationDisplay.innerHTML = `
-                <span style="color: #c33;">✗ Gagal</span><br>
+                <span style="color: #c33;">Gagal</span><br>
                 <span style="font-size: 12px; color: #666;">Izinkan akses lokasi</span>
               `;
-              shareLocBtn.textContent = '📍 Ambil Lokasi';
+              shareLocBtn.textContent = 'Ambil Lokasi';
               shareLocBtn.style.background = 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)';
               shareLocBtn.disabled = false;
             }
           );
         } else {
           locationDisplay.innerHTML = `
-            <span style="color: #c33;">✗ Tidak didukung</span>
+            <span style="color: #c33;">Tidak didukung</span>
           `;
         }
       };
@@ -1112,7 +1113,7 @@
       submitBtn.onclick = async () => {
         // Validate location is required
         if (!latitude || !longitude || isNaN(latitude) || isNaN(longitude)) {
-          alert('⚠️ Lokasi pengiriman WAJIB!\n\nSilakan tekan tombol "Ambil Lokasi" untuk membagikan lokasi Anda.');
+          alert('Lokasi pengiriman WAJIB!\n\nSilakan tekan tombol "Ambil Lokasi" untuk membagikan lokasi Anda.');
           return;
         }
 
@@ -1127,7 +1128,7 @@
           if (addressEl) customerAddress = addressEl.value.trim();
           
           if (!customerName || !customerPhone || !customerAddress) {
-            alert('⚠️ Harap lengkapi data: Nama, WhatsApp, dan Alamat');
+            alert('Harap lengkapi data: Nama, WhatsApp, dan Alamat');
             return;
           }
         }
@@ -1274,7 +1275,7 @@
         transition: transform 0.2s;
       `;
       confirmPaymentBtn.onmouseover = () => confirmPaymentBtn.style.transform = 'translateY(-2px)';
-      confirmPaymentBtn.onmouseout = () => confirmPaymentBtn.style.transform = 'translateY(0)';
+      confirmPaymentBtn.onmouseoutPaymentBtn.style.transform = () => confirm = 'translateY(0)';
       confirmPaymentBtn.onclick = async () => {
         processOrder(paymentMethod, customerName, customerPhone, customerAddress, latitude, longitude, qrisModal, qrisData);
       };
@@ -1415,7 +1416,7 @@
         cartData = {};
         updateCart();
 
-        loadingText.textContent = '✓ PESANAN DIKIRIM!';
+        loadingText.textContent = 'PESANAN DIKIRIM!';
         loadingText.style.color = '#10B981';
         spinner.style.display = 'none';
         
