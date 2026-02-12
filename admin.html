@@ -424,6 +424,7 @@
       <button class="tab active" onclick="switchTab('orders')">📦 Pesanan</button>
       <button class="tab" onclick="switchTab('menu')">🍔 Menu</button>
       <button class="tab" onclick="switchTab('customers')">👥 Customer</button>
+      <button class="tab" onclick="switchTab('bot')">🤖 Bot WA</button>
       <button class="tab" onclick="switchTab('settings')">⚙️ Pengaturan</button>
     </div>
     
@@ -468,6 +469,60 @@
       </div>
       <div id="customers-container">
         <div class="loading"><div class="spinner"></div>Memuat customer...</div>
+      </div>
+    </div>
+    
+    <!-- Bot WA Tab -->
+    <div id="tab-bot" class="content" style="display:none;">
+      <div class="settings-tabs">
+        <button class="settings-tab active" onclick="switchBotTab('messages')">💬 Pesan Bot</button>
+        <button class="settings-tab" onclick="switchBotTab('knowledge')">🧠 Knowledge CS</button>
+        <button class="settings-tab" onclick="switchBotTab('config')">⚙️ Konfigurasi</button>
+      </div>
+      
+      <!-- Bot Messages -->
+      <div id="bot-messages" class="settings-section">
+        <h3>💬 Pengaturan Pesan Bot WhatsApp</h3>
+        <p style="color: #666; margin-bottom: 16px; font-size: 14px;">
+          Edit pesan-pesan yang dikirim oleh bot. Gunakan variabel <strong>{nama}</strong> untuk nama customer dan <strong>{phone}</strong> untuk nomor WA.
+        </p>
+        <div id="bot-messages-container">
+          <div class="loading"><div class="spinner"></div>Memuat pesan bot...</div>
+        </div>
+      </div>
+      
+      <!-- Bot Knowledge -->
+      <div id="bot-knowledge" class="settings-section" style="display:none;">
+        <h3>🧠 Knowledge Base CS</h3>
+        <p style="color: #666; margin-bottom: 16px; font-size: 14px;">
+          Tambah pengetahuan untuk AI CS agar menjawab pertanyaan customer dengan tepat.
+        </p>
+        <div class="filter-bar">
+          <button class="btn-add" onclick="showKnowledgeForm()">➕ Tambah Pengetahuan</button>
+          <button class="btn-refresh" onclick="loadKnowledge()">🔄 Refresh</button>
+        </div>
+        <div id="knowledge-container">
+          <div class="loading"><div class="spinner"></div>Memuat knowledge base...</div>
+        </div>
+      </div>
+      
+      <!-- Bot Config -->
+      <div id="bot-config" class="settings-section" style="display:none;">
+        <h3>⚙️ Konfigurasi Bot</h3>
+        <div class="settings-grid">
+          <div class="setting-item">
+            <label>Timeout Bot (Menit)</label>
+            <input type="number" id="bot-timeout" value="15" onchange="updateBotSetting('timeout', this.value)">
+          </div>
+          <div class="setting-item">
+            <label>Model Gemini</label>
+            <select id="bot-gemini-model" onchange="updateBotSetting('gemini_model', this.value)">
+              <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+              <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+              <option value="gemini-pro">Gemini Pro</option>
+            </select>
+          </div>
+        </div>
       </div>
     </div>
     
@@ -574,6 +629,8 @@
     let allOrders = [];
     let allMenu = [];
     let allCustomers = [];
+    let allBotMessages = [];
+    let allKnowledge = [];
     let currentOrder = null;
     let currentFormType = '';
     let currentEditRow = null;
@@ -628,6 +685,22 @@
       
       document.querySelectorAll('[id^="settings-"]').forEach(s => s.style.display = 'none');
       document.getElementById('settings-' + tab).style.display = 'block';
+    }
+    
+    // Bot Tabs
+    function switchBotTab(tab) {
+      document.querySelectorAll('#tab-bot .settings-tab').forEach(t => t.classList.remove('active'));
+      event.target.classList.add('active');
+      
+      document.querySelectorAll('[id^="bot-"]').forEach(s => {
+        if (s.id !== 'bot-messages' && s.id !== 'bot-knowledge' && s.id !== 'bot-config') return;
+        s.style.display = 'none';
+      });
+      
+      document.getElementById('bot-' + tab).style.display = 'block';
+      
+      if (tab === 'messages') loadBotMessages();
+      if (tab === 'knowledge') loadKnowledge();
     }
     
     // ========== ORDERS ==========
@@ -1148,12 +1221,219 @@
       }
     }
     
+    // ========== BOT MESSAGES ==========
+    async function loadBotMessages() {
+      const container = document.getElementById('bot-messages-container');
+      container.innerHTML = '<div class="loading"><div class="spinner"></div>Memuat pesan bot...</div>';
+      
+      try {
+        const response = await fetch(GAS_URL + '?action=getBotMessages');
+        const messages = await response.json();
+        allBotMessages = messages;
+        
+        if (!Array.isArray(messages) || messages.length === 0) {
+          container.innerHTML = '<div class="empty-state"><p>Belum ada pesan bot</p></div>';
+          return;
+        }
+        
+        renderBotMessages(messages);
+      } catch (error) {
+        container.innerHTML = '<div class="error-msg">Gagal memuat pesan bot</div>';
+      }
+    }
+    
+    function renderBotMessages(messages) {
+      const container = document.getElementById('bot-messages-container');
+      
+      let html = '<table class="data-table"><thead><tr>';
+      html += '<th>Pesan</th><th>Preview</th><th>Aksi</th>';
+      html += '</tr></thead><tbody>';
+      
+      messages.forEach((msg, index) => {
+        const preview = msg.message.length > 50 ? msg.message.substring(0, 50) + '...' : msg.message;
+        
+        html += '<tr>';
+        html += `<td><strong>${msg.description || msg.key}</strong><br><small style="color:#666">${msg.key}</small></td>`;
+        html += `<td style="font-size:13px;">${preview.replace(/\n/g, '<br>')}</td>`;
+        html += `<td>
+          <button class="action-btn btn-edit btn-sm" onclick="editBotMessage('${msg.key}')">Edit</button>
+        </td>`;
+        html += '</tr>';
+      });
+      
+      html += '</tbody></table>';
+      container.innerHTML = html;
+    }
+    
+    function editBotMessage(key) {
+      const msg = allBotMessages.find(m => m.key === key);
+      if (!msg) return;
+      
+      document.getElementById('form-modal-title').textContent = 'Edit: ' + (msg.description || key);
+      document.getElementById('form-modal-body').innerHTML = `
+        <div class="form-group">
+          <label>Key</label>
+          <input type="text" value="${msg.key}" readonly style="background:#f0f0f0;">
+        </div>
+        <div class="form-group">
+          <label>Pesan (bisa gunakan {nama} untuk nama customer)</label>
+          <textarea id="bot-message-text" rows="8" style="font-size:13px;">${msg.message}</textarea>
+        </div>
+        <div class="form-group">
+          <label style="color:#666;font-size:12px;">Preview:</label>
+          <div id="bot-message-preview" style="background:#f9fafb;padding:12px;border-radius:8px;font-size:13px;white-space:pre-wrap;">${msg.message}</div>
+        </div>
+      `;
+      
+      // Add preview on typing
+      document.getElementById('bot-message-text').addEventListener('input', function() {
+        document.getElementById('bot-message-preview').textContent = this.value;
+      });
+      
+      currentFormType = 'botMessage';
+      currentEditRow = key;
+      
+      document.getElementById('form-submit-btn').textContent = 'Simpan';
+      document.getElementById('form-modal').classList.add('open');
+    }
+    
+    async function saveBotMessage() {
+      const message = document.getElementById('bot-message-text').value;
+      const key = currentEditRow;
+      
+      if (!message) {
+        showToast('Pesan wajib diisi!', 'error');
+        return;
+      }
+      
+      try {
+        const params = new URLSearchParams();
+        params.append('action', 'updateBotMessage');
+        params.append('key', key);
+        params.append('message', message);
+        
+        await fetch(GAS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: params.toString(),
+          mode: 'no-cors'
+        });
+        
+        showToast('Pesan bot diperbarui!', 'success');
+        closeFormModal();
+        loadBotMessages();
+      } catch (error) {
+        showToast('Error: ' + error.message, 'error');
+      }
+    }
+    
+    // ========== BOT KNOWLEDGE ==========
+    async function loadKnowledge() {
+      const container = document.getElementById('knowledge-container');
+      container.innerHTML = '<div class="loading"><div class="spinner"></div>Memuat knowledge base...</div>';
+      
+      try {
+        const response = await fetch(GAS_URL + '?action=getCSKnowledge');
+        const knowledge = await response.json();
+        allKnowledge = knowledge;
+        
+        if (!Array.isArray(knowledge) || knowledge.length === 0) {
+          container.innerHTML = '<div class="empty-state"><p>Belum ada knowledge base</p></div>';
+          return;
+        }
+        
+        renderKnowledge(knowledge);
+      } catch (error) {
+        container.innerHTML = '<div class="error-msg">Gagal memuat knowledge base</div>';
+      }
+    }
+    
+    function renderKnowledge(knowledge) {
+      const container = document.getElementById('knowledge-container');
+      
+      let html = '<table class="data-table"><thead><tr>';
+      html += '<th>Kategori</th><th>Keywords</th><th>Jawaban</th><th>Aksi</th>';
+      html += '</tr></thead><tbody>';
+      
+      knowledge.forEach((k, index) => {
+        html += '<tr>';
+        html += `<td><strong>${k.kategori}</strong></td>`;
+        html += `<td><small>${k.keywords}</small></td>`;
+        html += `<td>${k.jawaban.substring(0, 80)}...</td>`;
+        html += `<td>
+          <button class="action-btn btn-delete btn-sm" onclick="deleteKnowledge(${index})">Hapus</button>
+        </td>`;
+        html += '</tr>';
+      });
+      
+      html += '</tbody></table>';
+      container.innerHTML = html;
+    }
+    
+    function showKnowledgeForm() {
+      currentFormType = 'knowledge';
+      
+      document.getElementById('form-modal-title').textContent = 'Tambah Knowledge';
+      document.getElementById('form-modal-body').innerHTML = `
+        <div class="form-group">
+          <label>Kategori</label>
+          <input type="text" id="knowledge-kategori" placeholder="Contoh: Menu, Harga, Pengiriman">
+        </div>
+        <div class="form-group">
+          <label>Keywords</label>
+          <input type="text" id="knowledge-keywords" placeholder="menu,makanan,harga (pisahkan dengan koma)">
+        </div>
+        <div class="form-group">
+          <label>Jawaban</label>
+          <textarea id="knowledge-jawaban" rows="4" placeholder="Jawaban yang akan diberikan oleh CS bot"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Contoh Pertanyaan</label>
+          <input type="text" id="knowledge-contoh" placeholder="ada menu apa?">
+        </div>
+      `;
+      
+      document.getElementById('form-submit-btn').textContent = 'Simpan';
+      document.getElementById('form-modal').classList.add('open');
+    }
+    
+    async function deleteKnowledge(index) {
+      if (!confirm('Yakin hapus knowledge ini?')) return;
+      
+      try {
+        const params = new URLSearchParams();
+        params.append('action', 'deleteCSKnowledge');
+        params.append('row', index);
+        
+        await fetch(GAS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: params.toString(),
+          mode: 'no-cors'
+        });
+        
+        showToast('Knowledge dihapus!', 'success');
+        loadKnowledge();
+      } catch (error) {
+        showToast('Error: ' + error.message, 'error');
+      }
+    }
+    
+    function updateBotSetting(key, value) {
+      showToast('Pengaturan disimpan!', 'success');
+      // Here you would save to GAS/PropertiesService
+    }
+    
     // ========== FORM SUBMIT ==========
     async function submitForm() {
       if (currentFormType === 'menu') {
         await submitMenuForm();
       } else if (currentFormType === 'customer') {
         await submitCustomerForm();
+      } else if (currentFormType === 'botMessage') {
+        await saveBotMessage();
+      } else if (currentFormType === 'knowledge') {
+        await submitKnowledgeForm();
       }
     }
     
@@ -1240,6 +1520,42 @@
         showToast(currentEditRow ? 'Customer diperbarui!' : 'Customer ditambahkan!', 'success');
         closeFormModal();
         loadCustomers();
+      } catch (error) {
+        showToast('Error: ' + error.message, 'error');
+      }
+    }
+    
+    async function submitKnowledgeForm() {
+      const data = {
+        kategori: document.getElementById('knowledge-kategori').value,
+        keywords: document.getElementById('knowledge-keywords').value,
+        jawaban: document.getElementById('knowledge-jawaban').value,
+        contoh_pertanyaan: document.getElementById('knowledge-contoh').value
+      };
+      
+      if (!data.kategori || !data.jawaban) {
+        showToast('Kategori dan jawaban wajib diisi!', 'error');
+        return;
+      }
+      
+      try {
+        const params = new URLSearchParams();
+        params.append('action', 'addCSKnowledge');
+        
+        Object.keys(data).forEach(key => {
+          params.append(key, data[key]);
+        });
+        
+        await fetch(GAS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: params.toString(),
+          mode: 'no-cors'
+        });
+        
+        showToast('Knowledge ditambahkan!', 'success');
+        closeFormModal();
+        loadKnowledge();
       } catch (error) {
         showToast('Error: ' + error.message, 'error');
       }

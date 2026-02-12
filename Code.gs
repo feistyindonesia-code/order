@@ -9,6 +9,7 @@ const SETTINGS_SHEET = 'Pengaturan';
 const CUSTOMERS_SHEET = 'Customers';
 const ORDERS_SHEET = 'Orders';
 const CS_KNOWLEDGE_SHEET = 'CS_Pengetahuan';
+const BOT_MESSAGES_SHEET = 'Bot_Pesan';
 
 const DEVICE_ID = "92b2af76-130d-46f0-b811-0874e3407988";
 const WA_API = "https://api.whacenter.com/api/send";
@@ -16,7 +17,7 @@ const ADMIN_PHONE = "6287787655880";
 
 // Gemini API Configuration
 const GEMINI_API_KEY = "AIzaSyAVtBqASiFLBTeKWttnCNQNvyJZ-x2ojBU";
-const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent";
+const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
 
 // Bot States
 const STATE_WAIT_NAME = "WAIT_NAME";
@@ -108,6 +109,27 @@ function setupSheets() {
     sh.appendRow(['Lokasi', 'lokasi,alamat,cari,tempat', 'Feisty berlokasi di Jakarta. Untuk melihat lokasi kami, silakan ketik 1 untuk Order.', 'di mana?']);
   }
   
+  // 7. Setup Bot Messages Sheet
+  sh = ss.getSheetByName(BOT_MESSAGES_SHEET);
+  if (!sh) {
+    sh = ss.insertSheet(BOT_MESSAGES_SHEET);
+  }
+  const botMsgHeaders = ['key', 'message', 'description'];
+  sh.getRange(1, 1, 1, botMsgHeaders.length).setValues([botMsgHeaders]);
+  sh.getRange(1, 1, 1, botMsgHeaders.length).setFontWeight('bold').setBackground('#E0FFE0');
+  if (sh.getLastRow() === 1) {
+    // Default bot messages - using template literals
+    sh.appendRow(['welcome', '👋 *Selamat Datang di Feisty*\n\nBoleh kami tahu *nama Kakak* untuk melanjutkan? 😊', 'Pesan saat customer baru']);
+    sh.appendRow(['bot_menu', '🍽️ *MENU FEISTY*\n\nHalo Kak {nama}!\n\nSilakan pilih:\n1️⃣ *Order Menu* 🛒\n2️⃣ *Chat CS* 💬\n3️⃣ *Info Promo* 🎉\n\nKetik angka atau kata kunci di atas ya! 😊', 'Menu utama bot']);
+    sh.appendRow(['order_link', '🔗 *LINK PEMESANAN*\n\nSilakan klik link di bawah untuk melanjutkan pemesanan:\n\n➡️ feisty.my.id/?name={nama}&phone={phone}\n\nData Kakak sudah terisi otomatis! 🎉', 'Link pemesanan dengan data customer']);
+    sh.appendRow(['cs_welcome', '💬 *CHAT CS*\n\nHalo Kak {nama}! 👋\n\nSilakan ketik pertanyaan Kakak tentang menu, pengiriman, pembayaran, atau hal lain.\n\nKetik *0* untuk kembali ke menu utama.', 'Pesan welcome CS']);
+    sh.appendRow(['timeout', '⏰ *Sesi Habis*\n\nHalo Kak {nama}!\n\nMaaf, sesi chat Feisty berakhir setelah 15 menit tidak aktif.\n\nKetik *apa saja* untuk memulai chat baru! 😊', 'Pesan timeout']);
+    sh.appendRow(['cs_fallback', 'Halo Kak {nama} 🙏\n\nMaaf, saya tidak memahami pertanyaan Kakak.\n\nSilakan ketik *1* untuk memesan atau *0* untuk kembali ke menu.', 'Pesan fallback CS']);
+    sh.appendRow(['order_info', '🛒 *ORDER MENU*\n\nHalo Kak {nama}!\n\nFeisty menyediakan berbagai pilihan makanan dan minuman yang lezat.\n\nSilakan pilih:\n1️⃣ *Lanjut ke Pemesanan*\n2️⃣ *Info Harga*\n3️⃣ *Info Pengiriman*', 'Info pemesanan']);
+    sh.appendRow(['order_pricing', '💰 *INFO HARGA*\n\nFeisty menyediakan menu dengan harga mulai dari Rp 15.000 - Rp 100.000.\n\n➡️ feisty.my.id\n\nKetik *1* untuk langsung ke pemesanan! 😊', 'Info harga']);
+    sh.appendRow(['order_delivery', '🚚 *INFO PENGIRIMAN*\n\n- Pengiriman tersedia di area Jakarta\n- Ongkir berdasarkan jarak\n- Minimum pembelian Rp 50.000\n- Gratis ongkir untuk jarak tertentu\n\nKetik *1* untuk memulai pemesanan! 🛒', 'Info pengiriman']);
+  }
+  
   return { status: 'success', message: 'All sheets setup completed' };
 }
 
@@ -127,6 +149,13 @@ function doGet(e) {
   else if (action === 'getCustomer') result = getCustomerByPhone(phone);
   else if (action === 'getOrders') result = getOrders();
   else if (action === 'getCustomers') result = getAllCustomers();
+  else if (action === 'getCSKnowledge') result = getAllCSKnowledge();
+  else if (action === 'getBotMessages') result = getAllBotMessages();
+  else if (action === 'updateBotMessage') {
+    const key = e.parameter.key;
+    const message = e.parameter.message;
+    result = updateBotMessage(key, message);
+  }
   else result = { error: 'Invalid action: ' + action };
   
   if (callback) {
@@ -583,178 +612,161 @@ function updateLastActivity(phone) {
 }
 
 // ==================================================
-// BOT MESSAGES
+// BOT MESSAGES FUNCTIONS
+// ==================================================
+function getBotMessage(key) {
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sh = ss.getSheetByName(BOT_MESSAGES_SHEET);
+    if (!sh) return null;
+    
+    const data = sh.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][0]).toLowerCase() === String(key).toLowerCase()) {
+        return String(data[i][1] || '');
+      }
+    }
+    return null;
+  } catch (err) {
+    return null;
+  }
+}
+
+function replaceBotVars(message, customer) {
+  if (!message) return '';
+  return message
+    .replace(/{nama}/g, customer.name || 'Kak')
+    .replace(/{phone}/g, customer.phone || '');
+}
+
+function updateBotMessage(key, newMessage) {
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sh = ss.getSheetByName(BOT_MESSAGES_SHEET);
+    if (!sh) {
+      return { success: false, message: 'Bot Messages sheet tidak ditemukan' };
+    }
+    
+    const data = sh.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][0]).toLowerCase() === String(key).toLowerCase()) {
+        sh.getRange(i + 1, 2).setValue(newMessage);
+        return { success: true, message: 'Pesan bot berhasil diperbarui' };
+      }
+    }
+    return { success: false, message: 'Key tidak ditemukan' };
+  } catch (err) {
+    return { success: false, message: err.toString() };
+  }
+}
+
+function getAllBotMessages() {
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sh = ss.getSheetByName(BOT_MESSAGES_SHEET);
+    if (!sh) return [];
+    
+    const data = sh.getDataRange().getValues();
+    if (data.length < 2) return [];
+    
+    const rows = data.slice(1);
+    return rows.map((row, i) => ({
+      row: i,
+      key: String(row[0] || ''),
+      message: String(row[1] || ''),
+      description: String(row[2] || '')
+    }));
+  } catch (err) {
+    return { error: err.toString() };
+  }
+}
+
+// ==================================================
+// BOT MESSAGES (Templates - akan di-override oleh sheet)
 // ==================================================
 function msgAskName() {
-  return `👋 *Selamat Datang di Feisty*
-
-Boleh kami tahu *nama Kakak* untuk melanjutkan? 😊`;
+  const msg = getBotMessage('welcome');
+  if (msg) return msg;
+  return '👋 *Selamat Datang di Feisty*\n\nBoleh kami tahu *nama Kakak* untuk melanjutkan? 😊';
 }
 
 function msgWelcome(name) {
-  return `✨ *Halo Kak ${name}!* ✨
-
-Senang berkenalan dengan Kakak! 🙏
-
-Feisty siap melayani Kakak dengan berbagai pilihan makanan dan minuman lezat.`;
+  return `✨ *Halo Kak ${name}!* ✨\n\nSenang berkenalan dengan Kakak! 🙏\n\nFeisty siap melayani Kakak dengan berbagai pilihan makanan dan minuman lezat.`;
 }
 
-function msgBotMenu(name) {
-  return `🍽️ *MENU FEISTY*
-
-Halo Kak ${name}! 
-
-Silakan pilih:
-1️⃣ *Order Menu* 🛒
-2️⃣ *Chat CS* 💬
-3️⃣ *Info Promo* 🎉
-
-Ketik angka atau kata kunci di atas ya! 😊`;
+function msgBotMenu(customer) {
+  const msg = getBotMessage('bot_menu');
+  if (msg) return replaceBotVars(msg, customer);
+  return `🍽️ *MENU FEISTY*\n\nHalo Kak ${customer.name}!\n\nSilakan pilih:\n1️⃣ *Order Menu* 🛒\n2️⃣ *Chat CS* 💬\n3️⃣ *Info Promo* 🎉\n\nKetik angka atau kata kunci di atas ya! 😊`;
 }
 
 function msgInvalidMenu(name) {
-  return `⚠️ *Maaf Kak ${name}*
-
-Pilihan tidak dikenali 🙏
-
-Silakan ketik:
-1️⃣ Untuk Order
-2️⃣ Untuk Chat CS
-3️⃣ Untuk Promo
-
-atau ketik *0* untuk kembali ke menu.`;
+  return `⚠️ *Maaf Kak ${name}*\n\nPilihan tidak dikenali 🙏\n\nSilakan ketik:\n1️⃣ Untuk Order\n2️⃣ Untuk Chat CS\n3️⃣ Untuk Promo\n\natau ketik *0* untuk kembali ke menu.`;
 }
 
 function msgOrderInfo(customer) {
-  return `🛒 *ORDER MENU*
-
-Halo Kak ${customer.name}!
-
-Feisty menyediakan berbagai pilihan makanan dan minuman yang lezat.
-
-Silakan pilih:
-1️⃣ *Lanjut ke Pemesanan* 
-2️⃣ *Info Harga*
-3️⃣ *Info Pengiriman*
-
-Ketik angka atau *0* untuk kembali.`;
+  const msg = getBotMessage('order_info');
+  if (msg) return replaceBotVars(msg, customer);
+  return `🛒 *ORDER MENU*\n\nHalo Kak ${customer.name}!\n\nFeisty menyediakan berbagai pilihan makanan dan minuman yang lezat.\n\nSilakan pilih:\n1️⃣ *Lanjut ke Pemesanan*\n2️⃣ *Info Harga*\n3️⃣ *Info Pengiriman*\n\nKetik angka atau *0* untuk kembali.`;
 }
 
 function msgOrderLink(customer) {
-  // Create order link with customer info pre-filled
   const encodedName = encodeURIComponent(customer.name || '');
   const encodedPhone = encodeURIComponent(customer.phone || '');
   
-  return `🔗 *LINK PEMESANAN*
-
-Silakan klik link di bawah untuk melanjutkan pemesanan:
-
-➡️ feisty.my.id/?name=${encodedName}&phone=${encodedPhone}
-
-Data Kakak sudah terisi otomatis, jadi tinggal pilih menu dan checkout! 🎉
-
-Ketik *1* jika sudah memesan atau ada yang ingin ditanyakan.`;
+  const msg = getBotMessage('order_link');
+  if (msg) {
+    const link = `feisty.my.id/?name=${encodedName}&phone=${encodedPhone}`;
+    return replaceBotVars(msg, customer).replace('{link}', link).replace(/ feisty\.my\.id\/\?name=\{nama\}&phone=\{phone\}/g, link);
+  }
+  
+  return `🔗 *LINK PEMESANAN*\n\nSilakan klik link di bawah untuk melanjutkan pemesanan:\n\n➡️ feisty.my.id/?name=${encodedName}&phone=${encodedPhone}\n\nData Kakak sudah terisi otomatis, jadi tinggal pilih menu dan checkout! 🎉\n\nKetik *1* jika sudah memesan atau ada yang ingin ditanyakan.`;
 }
 
 function msgOrderConfirmation(name) {
-  return `📋 Setelah memesan, Kakak akan menerima:
-- Konfirmasi pesanan via WhatsApp
-- Info estimasi pengiriman
-- Notifikasi status pesanan
-
-Terima kasih sudah memesan di Feisty! 🙏
-
-Ketik *0* untuk kembali ke menu utama.`;
+  return `📋 Setelah memesan, Kakak akan menerima:\n- Konfirmasi pesanan via WhatsApp\n- Info estimasi pengiriman\n- Notifikasi status pesanan\n\nTerima kasih sudah memesan di Feisty! 🙏\n\nKetik *0* untuk kembali ke menu utama.`;
 }
 
 function msgOrderPricing(name) {
-  return `💰 *INFO HARGA*
-
-Feisty menyediakan menu dengan harga mulai dari Rp 15.000 - Rp 100.000.
-
-Untuk melihat menu lengkap dengan harga, silakan klik link:
-➡️ feisty.my.id
-
-Atau ketik *1* untuk langsung ke pemesanan! 😊`;
+  const msg = getBotMessage('order_pricing');
+  if (msg) return replaceBotVars(msg, { name: name });
+  return `💰 *INFO HARGA*\n\nFeisty menyediakan menu dengan harga mulai dari Rp 15.000 - Rp 100.000.\n\nUntuk melihat menu lengkap dengan harga, silakan klik link:\n➡️ feisty.my.id\n\nAtau ketik *1* untuk langsung ke pemesanan! 😊`;
 }
 
 function msgOrderDelivery(name) {
-  return `🚚 *INFO PENGIRIMAN*
-
-- Pengiriman tersedia di area Jakarta dan sekitarnya
-- Ongkir dihitung berdasarkan jarak
-- Minimum pembelian Rp 50.000
-- Gratis ongkir untuk jarak tertentu
-
-Ketik *1* untuk memulai pemesanan! 🛒`;
+  const msg = getBotMessage('order_delivery');
+  if (msg) return replaceBotVars(msg, { name: name });
+  return `🚚 *INFO PENGIRIMAN*\n\n- Pengiriman tersedia di area Jakarta dan sekitarnya\n- Ongkir dihitung berdasarkan jarak\n- Minimum pembelian Rp 50.000\n- Gratis ongkir untuk jarak tertentu\n\nKetik *1* untuk memulai pemesanan! 🛒`;
 }
 
 function msgInvalidOrder(name) {
-  return `⚠️ *Maaf Kak ${name}*
-
-Pilihan tidak dikenali 🙏
-
-Silakan ketik:
-1️⃣ Lanjut ke Pemesanan
-2️⃣ Info Harga  
-3️⃣ Info Pengiriman
-0️⃣ Kembali ke menu
-
-atau ketik *0* untuk kembali.`;
+  return `⚠️ *Maaf Kak ${name}*\n\nPilihan tidak dikenali 🙏\n\nSilakan ketik:\n1️⃣ Lanjut ke Pemesanan\n2️⃣ Info Harga  \n3️⃣ Info Pengiriman\n0️⃣ Kembali ke menu\n\natau ketik *0* untuk kembali.`;
 }
 
-function msgCSWelcome(name) {
-  return `💬 *CHAT CS*
-
-Halo Kak ${name}! 👋
-
-Saya asisten Feisty yang siap membantu Kakak.
-
-Silakan ketik pertanyaan Kakak tentang:
-- Menu dan harga
-- Pengiriman
-- Pembayaran
-- Promo
-- Atau hal lain yang ingin ditanyakan
-
-Ketik *0* untuk kembali ke menu utama atau *selesai* untuk mengakhiri chat.
-
-Siap membantu Kakak! 😊`;
+function msgCSWelcome(customer) {
+  const msg = getBotMessage('cs_welcome');
+  if (msg) return replaceBotVars(msg, customer);
+  return `💬 *CHAT CS*\n\nHalo Kak ${customer.name}! 👋\n\nSaya asisten Feisty yang siap membantu Kakak.\n\nSilakan ketik pertanyaan Kakak tentang:\n- Menu dan harga\n- Pengiriman\n- Pembayaran\n- Promo\n- Atau hal lain yang ingin ditanyakan\n\nKetik *0* untuk kembali ke menu utama atau *selesai* untuk mengakhiri chat.\n\nSiap membantu Kakak! 😊`;
 }
 
 function msgCSEnd(name) {
-  return `✅ *Chat Selesai*
-
-Terima kasih sudah chatting dengan Feisty, Kak ${name}! 🙏
-
-Jika ada pertanyaan lain, silakan hubungi kami kembali atau ketik apa saja untuk memulai chat baru.
-
-Feisty siap membantu kapan saja! 💚
-
-Ketik *apa saja* untuk memulai percakapan baru.`;
+  return `✅ *Chat Selesai*\n\nTerima kasih sudah chatting dengan Feisty, Kak ${name}! 🙏\n\nJika ada pertanyaan lain, silakan hubungi kami kembali atau ketik apa saja untuk memulai chat baru.\n\nFeisty siap membantu kapan saja! 💚\n\nKetik *apa saja* untuk memulai percakapan baru.`;
 }
 
 function msgBackToMenu(name) {
-  return `↩️ *Kembali ke Menu*
-
-Baik Kak ${name}, kembali ke menu utama.
-
-Silakan pilih:
-1️⃣ *Order Menu* 🛒
-2️⃣ *Chat CS* 💬
-3️⃣ *Info Promo* 🎉`;
+  return `↩️ *Kembali ke Menu*\n\nBaik Kak ${name}, kembali ke menu utama.\n\nSilakan pilih:\n1️⃣ *Order Menu* 🛒\n2️⃣ *Chat CS* 💬\n3️⃣ *Info Promo* 🎉`;
 }
 
-function msgTimeout(name) {
-  return `⏰ *Sesi Habis*
+function msgTimeout(customer) {
+  const msg = getBotMessage('timeout');
+  if (msg) return replaceBotVars(msg, customer);
+  return `⏰ *Sesi Habis*\n\nHalo Kak ${customer.name}!\n\nMaaf, sepertinya sudah ada yang bisa saya bantu? \n\nSesi chat Feisty berakhir setelah 15 menit tidak aktif.\n\nSilakan ketik *apa saja* untuk memulai chat baru dengan Feisty! 😊`;
+}
 
-Halo Kak ${name}!
-
-Maaf, sepertinya sudah ada yang bisa saya bantu? 
-
-Sesi chat Feisty berakhir setelah 15 menit tidak aktif.
-
-Silakan ketik *apa saja* untuk memulai chat baru dengan Feisty! 😊`;
+function msgCSFallback(customer) {
+  const msg = getBotMessage('cs_fallback');
+  if (msg) return replaceBotVars(msg, customer);
+  return `Halo Kak ${customer.name} 🙏\n\nMaaf, saya tidak memahami pertanyaan Kakak.\n\nSilakan:\n- Ketik *1* untuk melihat menu dan memesan\n- Ketik *0* untuk kembali ke menu utama\n- Hubungi admin langsung jika perlu: ${ADMIN_PHONE}\n\nTerima kasih! 😊`;
 }
 
 // ==================================================
