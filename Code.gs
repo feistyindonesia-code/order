@@ -112,14 +112,16 @@ function doGet(e) {
 // ==================================================
 function doPost(e) {
   try {
-    const body = JSON.parse(e.postData?.contents || "{}");
+    // Log ke sheet
+    logToSheet("=== WHATSAPP WEBHOOK ===", "");
+    logToSheet("PostData:", e.postData ? e.postData.contents : "empty");
     
-    Logger.log("=== WHATSAPP WEBHOOK ===");
-    Logger.log("Raw body:", JSON.stringify(body));
+    const body = JSON.parse(e.postData?.contents || "{}");
+    logToSheet("Parsed body:", JSON.stringify(body));
 
     // Handle ORDER dari index.html
     if (body.action === 'ORDER') {
-      Logger.log("Handling ORDER action");
+      logToSheet("Handling ORDER action", "");
       handleOrderFromIndex(body);
       return ok();
     }
@@ -128,23 +130,40 @@ function doPost(e) {
     const phone = body.number || body.from || body.sender || "";
     const text = (body.message || body.body || body.text || "").trim();
     
-    Logger.log("Phone:", phone);
-    Logger.log("Text:", text);
+    logToSheet("Phone:", phone);
+    logToSheet("Text:", text);
 
     if (!phone || !text) {
-      Logger.log("No phone or text found");
+      logToSheet("No phone or text", "");
       return ok();
     }
     
     const normalizedPhone = normalizeNumber(phone);
-    Logger.log("Normalized phone:", normalizedPhone);
+    logToSheet("Normalized phone:", normalizedPhone);
     
     handleIncomingWA(normalizedPhone, text);
     return ok();
 
   } catch (err) {
-    Logger.log("Error di doPost:", err.toString());
+    logToSheet("ERROR:", err.toString());
     return ok();
+  }
+}
+
+// ==================================================
+// LOG TO SHEET
+// ==================================================
+function logToSheet(message, data) {
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    let sh = ss.getSheetByName("Logs");
+    if (!sh) {
+      sh = ss.insertSheet("Logs");
+      sh.appendRow(["Timestamp", "Message", "Data"]);
+    }
+    sh.appendRow([new Date(), message, String(data).substring(0, 500)]);
+  } catch (err) {
+    // Ignore logging errors
   }
 }
 
@@ -372,12 +391,12 @@ ${discount > 0 ? `🎁 *Diskon: Rp ${discount.toLocaleString('id-ID')}
 // ==================================================
 function sendWA(to, message) {
   try {
-    Logger.log("=== SEND WA ===");
-    Logger.log("To:", to);
-    Logger.log("Message:", message.substring(0, 100) + "...");
+    logToSheet("=== SEND WA ===", "");
+    logToSheet("To:", to);
+    logToSheet("Message:", message.substring(0, 200));
     
     const payload = { device_id: DEVICE_ID, number: to, message: message };
-    Logger.log("Payload:", JSON.stringify(payload));
+    logToSheet("Payload:", JSON.stringify(payload));
     
     const options = {
       method: "post",
@@ -391,12 +410,12 @@ function sendWA(to, message) {
     const responseCode = response.getResponseCode();
     const responseText = response.getContentText();
     
-    Logger.log("Response Code:", responseCode);
-    Logger.log("Response Text:", responseText);
+    logToSheet("Response Code:", responseCode);
+    logToSheet("Response Text:", responseText.substring(0, 500));
     
     return responseCode;
   } catch (err) {
-    Logger.log("Error sendWA:", err.toString());
+    logToSheet("ERROR sendWA:", err.toString());
     return 0;
   }
 }
@@ -406,24 +425,24 @@ function sendWA(to, message) {
 // ==================================================
 function handleIncomingWA(phone, text) {
   try {
-    Logger.log("=== HANDLE INCOMING WA ===");
-    Logger.log("Phone:", phone);
-    Logger.log("Text:", text);
+    logToSheet("=== HANDLE INCOMING WA ===", "");
+    logToSheet("Phone:", phone);
+    logToSheet("Text:", text);
     
     const customer = getCustomer(phone);
-    Logger.log("Customer found:", customer);
+    logToSheet("Customer found:", customer ? "yes" : "no");
     
     if (!customer) {
-      Logger.log("New customer, saving...");
+      logToSheet("New customer, saving...", "");
       saveNewCustomer(phone);
       sendWA(phone, msgAskName());
       return;
     }
     
-    Logger.log("Customer state:", customer.state);
+    logToSheet("Customer state:", customer.state);
     
     if (customer.state === "WAIT_NAME") {
-      Logger.log("Updating customer name...");
+      logToSheet("Updating customer name...", "");
       updateCustomer(customer.row, text, "MENU");
       sendWA(phone, msgMenu(text));
       return;
@@ -431,7 +450,7 @@ function handleIncomingWA(phone, text) {
     
     if (customer.state === "MENU") {
       const t = text.toLowerCase().trim();
-      Logger.log("Menu option:", t);
+      logToSheet("Menu option:", t);
       if (t === "1" || t.includes("order") || t.includes("pesan") || t.includes("beli")) {
         sendWA(phone, msgOrderLink(customer.name));
         return;
@@ -443,52 +462,53 @@ function handleIncomingWA(phone, text) {
       sendWA(phone, msgInvalidMenu(customer.name));
     }
   } catch (err) {
-    Logger.log("Error handleIncomingWA:", err.toString());
+    logToSheet("ERROR handleIncomingWA:", err.toString());
   }
 }
 
 function getCustomer(phone) {
   try {
-    Logger.log("Getting customer:", phone);
+    logToSheet("Getting customer:", phone);
     const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
     const sh = ss.getSheetByName(CUSTOMERS_SHEET);
     
     if (!sh) {
-      Logger.log("Sheet not found:", CUSTOMERS_SHEET);
+      logToSheet("Sheet not found:", CUSTOMERS_SHEET);
       return null;
     }
     
     const data = sh.getDataRange().getValues();
-    Logger.log("Total rows:", data.length);
+    logToSheet("Total rows in sheet:", data.length);
     
     for (let i = 1; i < data.length; i++) {
       const rowPhone = normalizeNumber(String(data[i][0]));
-      Logger.log("Row", i, "phone:", rowPhone);
       if (rowPhone === normalizeNumber(phone)) {
+        logToSheet("Found customer at row:", i + 1);
         return { row: i + 1, phone: data[i][0], name: data[i][1], state: data[i][5] };
       }
     }
+    logToSheet("Customer not found", "");
   } catch (err) {
-    Logger.log("Error getCustomer:", err.toString());
+    logToSheet("ERROR getCustomer:", err.toString());
   }
   return null;
 }
 
 function saveNewCustomer(phone) {
   try {
-    Logger.log("Saving new customer:", phone);
+    logToSheet("Saving new customer:", phone);
     const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
     const sh = ss.getSheetByName(CUSTOMERS_SHEET);
     
     if (!sh) {
-      Logger.log("Creating Customers sheet...");
-      return; // Sheet tidak ada
+      logToSheet("Creating Customers sheet...", "");
+      return;
     }
     
     sh.appendRow([phone, "", "", "", "", "WAIT_NAME", new Date(), new Date()]);
-    Logger.log("Customer saved successfully");
+    logToSheet("Customer saved successfully", "");
   } catch (err) {
-    Logger.log("Error saveNewCustomer:", err.toString());
+    logToSheet("ERROR saveNewCustomer:", err.toString());
   }
 }
 
