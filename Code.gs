@@ -17,7 +17,7 @@ const ADMIN_PHONE = "6287787655880";
 
 // Gemini API Configuration
 const GEMINI_API_KEY = "AIzaSyAVtBqASiFLBTeKWttnCNQNvyJZ-x2ojBU";
-const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
+const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 
 // Bot States
 const STATE_WAIT_NAME = "WAIT_NAME";
