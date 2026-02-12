@@ -845,7 +845,7 @@ function addMenuItem(data) {
 }
 
 // Update menu item
-function updateMenuItem(rowNumber, data) {
+function updateMenuItem(index, data) {
   try {
     const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
     const sh = ss.getSheetByName(MENU_SHEET);
@@ -854,7 +854,8 @@ function updateMenuItem(rowNumber, data) {
       return { success: false, message: 'Menu sheet tidak ditemukan' };
     }
     
-    const row = parseInt(rowNumber) + 1; // +1 for header
+    // Row 1 = header, Row 2 = first data item
+    const row = parseInt(index) + 2; 
     
     sh.getRange(row, 1).setValue(data.nama || '');
     sh.getRange(row, 2).setValue(data.deskripsi || '');
