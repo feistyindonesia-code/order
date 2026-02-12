@@ -114,20 +114,32 @@ function doPost(e) {
   try {
     const body = JSON.parse(e.postData?.contents || "{}");
     
-    Logger.log("Webhook terima:", JSON.stringify(body));
+    Logger.log("=== WHATSAPP WEBHOOK ===");
+    Logger.log("Raw body:", JSON.stringify(body));
 
     // Handle ORDER dari index.html
     if (body.action === 'ORDER') {
+      Logger.log("Handling ORDER action");
       handleOrderFromIndex(body);
       return ok();
     }
 
     // Handle normal WA messages
-    const phone = normalizeNumber(body.number || body.from || body.sender || "");
+    const phone = body.number || body.from || body.sender || "";
     const text = (body.message || body.body || body.text || "").trim();
+    
+    Logger.log("Phone:", phone);
+    Logger.log("Text:", text);
 
-    if (!phone || !text) return ok();
-    handleIncomingWA(phone, text);
+    if (!phone || !text) {
+      Logger.log("No phone or text found");
+      return ok();
+    }
+    
+    const normalizedPhone = normalizeNumber(phone);
+    Logger.log("Normalized phone:", normalizedPhone);
+    
+    handleIncomingWA(normalizedPhone, text);
     return ok();
 
   } catch (err) {
@@ -360,7 +372,13 @@ ${discount > 0 ? `🎁 *Diskon: Rp ${discount.toLocaleString('id-ID')}
 // ==================================================
 function sendWA(to, message) {
   try {
+    Logger.log("=== SEND WA ===");
+    Logger.log("To:", to);
+    Logger.log("Message:", message.substring(0, 100) + "...");
+    
     const payload = { device_id: DEVICE_ID, number: to, message: message };
+    Logger.log("Payload:", JSON.stringify(payload));
+    
     const options = {
       method: "post",
       contentType: "application/json",
@@ -368,8 +386,17 @@ function sendWA(to, message) {
       muteHttpExceptions: true,
       timeout: 30
     };
-    return UrlFetchApp.fetch(WA_API, options).getResponseCode();
+    
+    const response = UrlFetchApp.fetch(WA_API, options);
+    const responseCode = response.getResponseCode();
+    const responseText = response.getContentText();
+    
+    Logger.log("Response Code:", responseCode);
+    Logger.log("Response Text:", responseText);
+    
+    return responseCode;
   } catch (err) {
+    Logger.log("Error sendWA:", err.toString());
     return 0;
   }
 }
@@ -379,15 +406,24 @@ function sendWA(to, message) {
 // ==================================================
 function handleIncomingWA(phone, text) {
   try {
+    Logger.log("=== HANDLE INCOMING WA ===");
+    Logger.log("Phone:", phone);
+    Logger.log("Text:", text);
+    
     const customer = getCustomer(phone);
+    Logger.log("Customer found:", customer);
     
     if (!customer) {
+      Logger.log("New customer, saving...");
       saveNewCustomer(phone);
       sendWA(phone, msgAskName());
       return;
     }
     
+    Logger.log("Customer state:", customer.state);
+    
     if (customer.state === "WAIT_NAME") {
+      Logger.log("Updating customer name...");
       updateCustomer(customer.row, text, "MENU");
       sendWA(phone, msgMenu(text));
       return;
@@ -395,6 +431,7 @@ function handleIncomingWA(phone, text) {
     
     if (customer.state === "MENU") {
       const t = text.toLowerCase().trim();
+      Logger.log("Menu option:", t);
       if (t === "1" || t.includes("order") || t.includes("pesan") || t.includes("beli")) {
         sendWA(phone, msgOrderLink(customer.name));
         return;
@@ -412,24 +449,47 @@ function handleIncomingWA(phone, text) {
 
 function getCustomer(phone) {
   try {
+    Logger.log("Getting customer:", phone);
     const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
     const sh = ss.getSheetByName(CUSTOMERS_SHEET);
+    
+    if (!sh) {
+      Logger.log("Sheet not found:", CUSTOMERS_SHEET);
+      return null;
+    }
+    
     const data = sh.getDataRange().getValues();
+    Logger.log("Total rows:", data.length);
+    
     for (let i = 1; i < data.length; i++) {
-      if (normalizeNumber(String(data[i][0])) === normalizeNumber(phone)) {
+      const rowPhone = normalizeNumber(String(data[i][0]));
+      Logger.log("Row", i, "phone:", rowPhone);
+      if (rowPhone === normalizeNumber(phone)) {
         return { row: i + 1, phone: data[i][0], name: data[i][1], state: data[i][5] };
       }
     }
-  } catch (err) {}
+  } catch (err) {
+    Logger.log("Error getCustomer:", err.toString());
+  }
   return null;
 }
 
 function saveNewCustomer(phone) {
   try {
+    Logger.log("Saving new customer:", phone);
     const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
     const sh = ss.getSheetByName(CUSTOMERS_SHEET);
+    
+    if (!sh) {
+      Logger.log("Creating Customers sheet...");
+      return; // Sheet tidak ada
+    }
+    
     sh.appendRow([phone, "", "", "", "", "WAIT_NAME", new Date(), new Date()]);
-  } catch (err) {}
+    Logger.log("Customer saved successfully");
+  } catch (err) {
+    Logger.log("Error saveNewCustomer:", err.toString());
+  }
 }
 
 function updateCustomer(row, name, state) {
