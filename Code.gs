@@ -258,10 +258,14 @@ function doPost(e) {
     const contentType = e?.postData?.contentType || '';
     const postData = e?.postData?.contents || '';
     
+    // Logging untuk debugging
+    console.log('doPost called');
+    console.log('ContentType:', contentType);
+    console.log('PostData:', postData.substring(0, 500));
+    
     if (contentType.includes('application/json')) {
       body = JSON.parse(postData);
     } else if (contentType.includes('application/x-www-form-urlencoded')) {
-      // Parse URL-encoded data
       const params = postData.split('&');
       params.forEach(p => {
         const [key, value] = p.split('=');
@@ -270,11 +274,9 @@ function doPost(e) {
         }
       });
     } else {
-      // Try parsing as JSON anyway
       try {
         body = JSON.parse(postData);
       } catch (err) {
-        // Try URL-encoded anyway
         const params = postData.split('&');
         params.forEach(p => {
           const [key, value] = p.split('=');
@@ -284,6 +286,8 @@ function doPost(e) {
         });
       }
     }
+    
+    console.log('Parsed body:', JSON.stringify(body));
     
     const action = body.action;
     
@@ -323,14 +327,24 @@ function doPost(e) {
       return jsonResponse(result);
     }
     
-    const phone = normalizeNumber(body.number || body.from || body.sender || "");
-    const text = (body.message || body.body || body.text || "").trim();
+    // Handle WhatsApp messages from Whacenter
+    // Whacenter typically sends: from, body, id, timestamp
+    const waPhone = normalizeNumber(body.from || body.number || body.sender || body.phone || "");
+    const waText = (body.body || body.message || body.text || "").trim();
     
-    if (!phone || !text) return jsonResponse({ status: 'ok' });
-    handleIncomingWA(phone, text);
+    console.log('WA Phone:', waPhone);
+    console.log('WA Text:', waText);
+    
+    if (!waPhone || !waText) {
+      console.log('No valid phone or text found');
+      return jsonResponse({ status: 'ok', message: 'No valid message' });
+    }
+    
+    handleIncomingWA(waPhone, waText);
     return jsonResponse({ status: 'ok' });
     
   } catch (err) {
+    console.log('Error in doPost:', err.toString());
     return jsonResponse({ status: 'error', message: err.toString() });
   }
 }
