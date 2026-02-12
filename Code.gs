@@ -256,9 +256,9 @@ function handleIncomingWA(phone, text) {
     
     // Check for timeout
     if (customer.state === STATE_TIMEOUT) {
-      logToSheet("Customer in timeout state, resetting to WAIT_NAME...", "");
-      updateCustomerState(phone, STATE_WAIT_NAME);
-      sendWA(phone, msgAskName());
+      logToSheet("Customer in timeout state, resetting to MENU...", "");
+      updateCustomerState(phone, STATE_MENU);
+      sendWA(phone, msgBotMenu(customer.name));
       return;
     }
     
@@ -267,9 +267,9 @@ function handleIncomingWA(phone, text) {
       const lastActivity = new Date(customer.last_activity).getTime();
       const now = Date.now();
       if (now - lastActivity > BOT_TIMEOUT_MS) {
-        logToSheet("Bot timeout (15 min), resetting to WAIT_NAME...", "");
-        updateCustomerState(phone, STATE_WAIT_NAME);
-        sendWA(phone, msgAskName());
+        logToSheet("Bot timeout (15 min), resetting to MENU...", "");
+        updateCustomerState(phone, STATE_MENU);
+        sendWA(phone, msgBotMenu(customer.name));
         return;
       }
     }
@@ -853,10 +853,11 @@ function checkBotTimeouts() {
             const phone = data[i][0];
             const name = data[i][1] || 'Kak';
             
-            // Reset to WAIT_NAME (initial state)
-            updateCustomerState(phone, STATE_WAIT_NAME);
+            // Reset to MENU state
+            updateCustomerState(phone, STATE_MENU);
+            sendWA(phone, msgBotMenu({name: name, phone: phone}));
             
-            logToSheet("Timeout reset to WAIT_NAME for:", phone);
+            logToSheet("Timeout - reset to MENU for:", phone);
           }
         }
       }
