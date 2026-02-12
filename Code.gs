@@ -633,7 +633,7 @@ function handleIncomingWA(phone, text) {
     
     if (customer.state === "MENU") {
       if (text === "1" || text.toLowerCase().includes("order")) {
-        sendWA(phone, "🛒 https://feistyindonesia-code.github.io/order/");
+        sendWA(phone, "🛒 https://feisty.my.id/");
       } else if (text === "2" || text.toLowerCase().includes("promo")) {
         sendWA(phone, "🎉 *Promo Soon!*");
       } else {
