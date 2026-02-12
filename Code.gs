@@ -419,7 +419,8 @@ function getMenu() {
     const items = rows
       .filter(r => {
         const aktif = r[idx('aktif')];
-        return aktif === true || aktif === 'true' || aktif === 1;
+        const aktifStr = String(aktif).toLowerCase();
+        return aktif === true || aktif === 'true' || aktif === 'TRUE' || aktif === 1 || aktifStr === 'true';
       })
       .map((r, i) => {
         const harga = Number(r[idx('harga')]) || 0;
