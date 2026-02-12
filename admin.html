@@ -540,7 +540,6 @@
         <!-- Order details here -->
       </div>
       <div class="modal-footer">
-        <button class="action-btn btn-wa" onclick="sendWAMessage()">💬 WA Customer</button>
         <button class="action-btn" onclick="closeModal()">Tutup</button>
       </div>
     </div>
@@ -814,12 +813,6 @@
       } catch (error) {
         showToast('Error: ' + error.message, 'error');
       }
-    }
-    
-    function sendWAMessage() {
-      if (!currentOrder || !currentOrder.phone) return;
-      const msg = encodeURIComponent(`Halo ${currentOrder.nama}, ada info pesanan ${currentOrder.order_id}`);
-      window.open(`https://wa.me/${currentOrder.phone}?text=${msg}`, '_blank');
     }
     
     function closeModal() {
