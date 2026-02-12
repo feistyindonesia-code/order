@@ -557,7 +557,26 @@ function saveNewCustomer(phone) {
     const sh = ss.getSheetByName(CUSTOMERS_SHEET);
     if (!sh) return;
     
+    // Check if customer already exists (prevent duplicates)
+    const data = sh.getDataRange().getValues();
+    const normalizedPhone = normalizeNumber(phone);
+    
+    for (let i = 1; i < data.length; i++) {
+      const existingPhone = normalizeNumber(String(data[i][0]));
+      if (existingPhone === normalizedPhone) {
+        // Customer already exists, just update state to WAIT_NAME
+        const row = i + 1;
+        sh.getRange(row, 6).setValue(STATE_WAIT_NAME); // state
+        sh.getRange(row, 7).setValue(new Date()); // last_activity
+        sh.getRange(row, 9).setValue(new Date()); // updated_at
+        logToSheet("Customer updated (already exists):", phone);
+        return;
+      }
+    }
+    
+    // Customer not found, create new row
     sh.appendRow([phone, "", "", "", "", STATE_WAIT_NAME, new Date(), new Date(), new Date()]);
+    logToSheet("New customer created:", phone);
   } catch (err) {
     logToSheet("ERROR saveNewCustomer:", err.toString());
   }
@@ -1711,5 +1730,44 @@ function viewLogs(limit = 20) {
     return output;
   } catch (err) {
     return 'Error: ' + err.toString();
+  }
+}
+
+// Debug: Remove duplicate customers
+function removeDuplicateCustomers() {
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sh = ss.getSheetByName(CUSTOMERS_SHEET);
+    if (!sh) return { status: 'error', message: 'Sheet not found' };
+    
+    const data = sh.getDataRange().getValues();
+    if (data.length < 2) return { status: 'success', message: 'No data to clean' };
+    
+    const phoneMap = {};
+    const toDelete = [];
+    
+    // Find duplicates (skip header row 0)
+    for (let i = 1; i < data.length; i++) {
+      const phone = normalizeNumber(String(data[i][0]));
+      if (phone && phoneMap[phone]) {
+        // Found duplicate, mark for deletion
+        toDelete.push(i + 1); // +1 because sheet rows start at 1
+      } else if (phone) {
+        phoneMap[phone] = true;
+      }
+    }
+    
+    // Delete duplicates (from bottom to top to avoid index shift)
+    toDelete.sort((a, b) => b - a).forEach(row => {
+      sh.deleteRow(row);
+    });
+    
+    return { 
+      status: 'success', 
+      message: 'Removed ' + toDelete.length + ' duplicate rows',
+      remaining: Object.keys(phoneMap).length
+    };
+  } catch (err) {
+    return { status: 'error', message: err.toString() };
   }
 }
