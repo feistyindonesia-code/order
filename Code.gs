@@ -403,6 +403,14 @@ function handleCSChat(phone, text, customer) {
     return;
   }
   
+  // Order flow trigger - redirect to order
+  if (t === '1' || t === 'order' || t.includes('mau pesan') || t.includes('ingin pesan') || t.includes('mau beli')) {
+    updateCustomerState(phone, STATE_ORDER);
+    sendWA(phone, `📦 *PEMESANAN*\n\nBaik Kak ${customer.name}, silakan klik link di bawah untuk memilih menu:\n\n➡️ feisty.my.id/?name=${encodeURIComponent(customer.name)}&phone=${encodeURIComponent(customer.phone)}\n\nData Kakak sudah terisi otomatis! 🎉`);
+    sendWA(phone, msgOrderConfirmation(customer.name));
+    return;
+  }
+  
   // Get AI response from Gemini
   const response = getGeminiResponse(text, customer);
   sendWA(phone, response);
