@@ -15,7 +15,7 @@ const WA_API = "https://api.whacenter.com/api/send";
 const ADMIN_PHONE = "6287787655880";
 
 // Gemini API Configuration
-const GEMINI_API_KEY = "YOUR_GEMINI_API_KEY_HERE";
+const GEMINI_API_KEY = "AIzaSyAVtBqASiFLBTeKWttnCNQNvyJZ-x2ojBU";
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent";
 
 // Bot States
