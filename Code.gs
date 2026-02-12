@@ -161,7 +161,16 @@ function logToSheet(message, data) {
       sh = ss.insertSheet("Logs");
       sh.appendRow(["Timestamp", "Message", "Data"]);
     }
-    sh.appendRow([new Date(), message, String(data).substring(0, 500)]);
+    
+    // Handle error objects
+    let dataStr = "";
+    if (typeof data === 'object' && data !== null) {
+      dataStr = JSON.stringify(data);
+    } else {
+      dataStr = String(data || "");
+    }
+    
+    sh.appendRow([new Date(), message, dataStr.substring(0, 1000)]);
   } catch (err) {
     // Ignore logging errors
   }
@@ -430,7 +439,7 @@ function handleIncomingWA(phone, text) {
     logToSheet("Text:", text);
     
     const customer = getCustomer(phone);
-    logToSheet("Customer found:", customer ? "yes" : "no");
+    logToSheet("Customer object:", JSON.stringify(customer || {}));
     
     if (!customer) {
       logToSheet("New customer, saving...", "");
@@ -440,9 +449,10 @@ function handleIncomingWA(phone, text) {
     }
     
     logToSheet("Customer state:", customer.state);
+    logToSheet("Customer name:", customer.name);
     
     if (customer.state === "WAIT_NAME") {
-      logToSheet("Updating customer name...", "");
+      logToSheet("State is WAIT_NAME, asking for name...", "");
       updateCustomer(customer.row, text, "MENU");
       sendWA(phone, msgMenu(text));
       return;
@@ -460,15 +470,21 @@ function handleIncomingWA(phone, text) {
         return;
       }
       sendWA(phone, msgInvalidMenu(customer.name));
+      return;
     }
+    
+    // If state is empty or unknown, treat as new customer
+    logToSheet("Unknown state, treating as new customer", customer.state);
+    updateCustomer(customer.row, text, "MENU");
+    sendWA(phone, msgMenu(text));
+    
   } catch (err) {
-    logToSheet("ERROR handleIncomingWA:", err.toString());
+    logToSheet("ERROR handleIncomingWA:", err.toString() + "\n" + err.stack);
   }
 }
 
 function getCustomer(phone) {
   try {
-    logToSheet("Getting customer:", phone);
     const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
     const sh = ss.getSheetByName(CUSTOMERS_SHEET);
     
@@ -480,10 +496,14 @@ function getCustomer(phone) {
     const data = sh.getDataRange().getValues();
     logToSheet("Total rows in sheet:", data.length);
     
+    // Log all data for debugging
     for (let i = 1; i < data.length; i++) {
+      logToSheet("Row " + i + " data:", 
+        "phone=" + data[i][0] + ", nama=" + data[i][1] + ", state=" + data[i][5]);
+      
       const rowPhone = normalizeNumber(String(data[i][0]));
       if (rowPhone === normalizeNumber(phone)) {
-        logToSheet("Found customer at row:", i + 1);
+        logToSheet("Found match at row:", i + 1);
         return { row: i + 1, phone: data[i][0], name: data[i][1], state: data[i][5] };
       }
     }
