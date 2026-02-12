@@ -496,12 +496,12 @@
   </div>
   <script>
     // URL GAS (single deployment)
-    const gasUrl = 'https://script.google.com/macros/s/AKfycbyuso9Oz4Ta4KLFwoJTUB2kivTJNVPn_UeyWvccZ_s0SJSEzWzaGGV6GmVLSxeHO3qsaw/exec';
+    const gasUrl = 'https://script.google.com/macros/s/AKfycbzQq8eDT2MtQ1ON8j3_FQb3yJ03KiXa1VGWRKGEGdqj71EyH8z71r20PwIptiBKNWXWaw/exec';
 
     const config = {
       qris_api_key: "3a8ad4e906094138a9f6adf8bf920e6907706444bb2546ccbadb3047bb8b09b6",
       qris_fee: 1000,
-      gas_url_bot: "https://script.google.com/macros/s/AKfycbyuso9Oz4Ta4KLFwoJTUB2kivTJNVPn_UeyWvccZ_s0SJSEzWzaGGV6GmVLSxeHO3qsaw/exec",
+      gas_url_bot: "https://script.google.com/macros/s/AKfycbzQq8eDT2MtQ1ON8j3_FQb3yJ03KiXa1VGWRKGEGdqj71EyH8z71r20PwIptiBKNWXWaw/exec",
       base_shipping_cost: 10000,
       shipping_cost_per_km: 2000,
       free_shipping_min_distance: 5
@@ -949,8 +949,8 @@
       const formTitle = document.createElement('h2');
       formTitle.textContent = 'PENGIRIMAN';
       formTitle.style.cssText = `
-        margin: 0 0 20px font-size:  0;
-       18px;
+        margin: 0 0 20px 0;
+        font-size: 18px;
         color: #1F2937;
         text-align: center;
       `;
@@ -1332,7 +1332,7 @@
         transition: transform 0.2s;
       `;
       confirmPaymentBtn.onmouseover = () => confirmPaymentBtn.style.transform = 'translateY(-2px)';
-      confirmPaymentBtn.onmouseoutPaymentBtn.style.transform = () => confirm = 'translateY(0)';
+      confirmPaymentBtn.onmouseout = () => confirmPaymentBtn.style.transform = 'translateY(0)';
       confirmPaymentBtn.onclick = async () => {
         processOrder(paymentMethod, customerName, customerPhone, customerAddress, latitude, longitude, qrisModal, qrisData);
       };
