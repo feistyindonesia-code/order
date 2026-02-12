@@ -755,6 +755,7 @@ Maaf, sepertinya sudah ada yang bisa saya bantu?
 Sesi chat Feisty berakhir setelah 15 menit tidak aktif.
 
 Silakan ketik *apa saja* untuk memulai chat baru dengan Feisty! 😊`;
+}
 
 // ==================================================
 // SEND WHATSAPP
