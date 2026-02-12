@@ -1772,3 +1772,62 @@ function removeDuplicateCustomers() {
     return { status: 'error', message: err.toString() };
   }
 }
+
+// ==================================================
+// TRIGGER SETUP FUNCTIONS
+// ==================================================
+
+function setupTrigger() {
+  // Delete existing triggers first
+  ScriptApp.getProjectTriggers().forEach(trigger => {
+    ScriptApp.deleteTrigger(trigger);
+  });
+  
+  // Create new trigger - runs every 5 minutes
+  ScriptApp.newTrigger('checkBotTimeouts')
+    .timeBased()
+    .everyMinutes(5)
+    .create();
+  
+  return '✅ Trigger created successfully!\n\nFunction: checkBotTimeouts\nRuns: Every 5 minutes\n\nThis will check for customers who have been inactive for 15+ minutes and reset them to MENU state.';
+}
+
+function removeTrigger() {
+  const triggers = ScriptApp.getProjectTriggers();
+  triggers.forEach(trigger => {
+    ScriptApp.deleteTrigger(trigger);
+  });
+  
+  return '🗑️ All triggers removed.\n\nThe timeout check function will no longer run automatically.';
+}
+
+function getTriggerStatus() {
+  const triggers = ScriptApp.getProjectTriggers();
+  
+  if (triggers.length === 0) {
+    return '❌ No triggers set up.\n\nTo enable timeout checking, run setupTrigger() from the GAS editor.';
+  }
+  
+  let status = '✅ Active Triggers:\n\n';
+  triggers.forEach((trigger, i) => {
+    status += `${i + 1}. ${trigger.getHandlerFunction()}\n`;
+    status += `   Type: ${trigger.getTriggerSource()}\n`;
+    if (trigger.getEventType()) {
+      status += `   Event: ${trigger.getEventType()}\n`;
+    }
+    status += '\n';
+  });
+  
+  return status;
+}
+
+// Quick setup - runs both setupSheets() and setupTrigger()
+function quickSetup() {
+  const result1 = setupSheets();
+  const result2 = setupTrigger();
+  
+  return '🎉 QUICK SETUP COMPLETE!\n\n' + 
+         '1. Sheets: ✅ Initialized\n' + 
+         '2. Trigger: ✅ Created\n\n' +
+         'The bot is now ready to handle customer conversations with timeout functionality.';
+}
