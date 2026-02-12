@@ -1432,3 +1432,275 @@ function getAllCSKnowledge() {
     return { error: err.toString() };
   }
 }
+
+// ==================================================
+// DEBUG FUNCTION - Untuk Testing dan Diagnosa
+// ==================================================
+function debugAll() {
+  const results = {
+    timestamp: new Date().toISOString(),
+    spreadsheet: null,
+    sheets: {},
+    config: null,
+    menu: null,
+    customers: null,
+    orders: null,
+    botMessages: null,
+    knowledge: null,
+    waTest: null,
+    geminiTest: null,
+    errors: []
+  };
+  
+  try {
+    // 1. Test Spreadsheet connection
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    results.spreadsheet = {
+      name: ss.getName(),
+      id: ss.getId(),
+      url: ss.getUrl()
+    };
+    
+    // 2. Check all sheets
+    const sheetNames = ss.getSheets().map(s => s.getName());
+    results.sheets.available = sheetNames;
+    results.sheets.required = [MENU_SHEET, LOCATION_SHEET, SETTINGS_SHEET, CUSTOMERS_SHEET, ORDERS_SHEET, CS_KNOWLEDGE_SHEET, BOT_MESSAGES_SHEET];
+    results.sheets.missing = results.sheets.required.filter(n => !sheetNames.includes(n));
+    
+    // 3. Test Get Config
+    try {
+      results.config = getConfig();
+    } catch (e) {
+      results.errors.push('Config: ' + e.toString());
+    }
+    
+    // 4. Test Get Menu
+    try {
+      const menu = getMenu();
+      results.menu = {
+        count: Array.isArray(menu) ? menu.length : 0,
+        error: menu.error || null
+      };
+    } catch (e) {
+      results.errors.push('Menu: ' + e.toString());
+    }
+    
+    // 5. Test Get Customers
+    try {
+      const customers = getAllCustomers();
+      results.customers = {
+        count: Array.isArray(customers) ? customers.length : 0
+      };
+    } catch (e) {
+      results.errors.push('Customers: ' + e.toString());
+    }
+    
+    // 6. Test Get Orders
+    try {
+      const orders = getOrders();
+      results.orders = {
+        count: Array.isArray(orders) ? orders.length : 0
+      };
+    } catch (e) {
+      results.errors.push('Orders: ' + e.toString());
+    }
+    
+    // 7. Test Get Bot Messages
+    try {
+      const msgs = getAllBotMessages();
+      results.botMessages = {
+        count: Array.isArray(msgs) ? msgs.length : 0,
+        keys: Array.isArray(msgs) ? msgs.map(m => m.key) : []
+      };
+    } catch (e) {
+      results.errors.push('Bot Messages: ' + e.toString());
+    }
+    
+    // 8. Test Get Knowledge
+    try {
+      const kb = getAllCSKnowledge();
+      results.knowledge = {
+        count: Array.isArray(kb) ? kb.length : 0
+      };
+    } catch (e) {
+      results.errors.push('Knowledge: ' + e.toString());
+    }
+    
+    // 9. Test WA API (send to admin)
+    try {
+      const waResult = sendWA(ADMIN_PHONE, '🔧 *TEST DEBUG*\n\nBot Feisty sedang dalam mode testing.\n\nTimestamp: ' + results.timestamp);
+      results.waTest = {
+        success: waResult === 200,
+        responseCode: waResult
+      };
+    } catch (e) {
+      results.waTest = { success: false, error: e.toString() };
+      results.errors.push('WA API: ' + e.toString());
+    }
+    
+  } catch (err) {
+    results.errors.push('Global: ' + err.toString());
+  }
+  
+  return results;
+}
+
+// Debug: Test single function
+function debugSpreadsheet() {
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sheets = ss.getSheets().map(s => s.getName());
+    return {
+      status: 'success',
+      spreadsheet: ss.getName(),
+      sheetCount: sheets.length,
+      sheets: sheets
+    };
+  } catch (err) {
+    return { status: 'error', message: err.toString() };
+  }
+}
+
+// Debug: Test WhatsApp send
+function debugSendWA(phone = ADMIN_PHONE, message = '🧪 Test WA dari Debug Function') {
+  try {
+    const result = sendWA(phone, message);
+    return {
+      status: 'success',
+      to: phone,
+      responseCode: result
+    };
+  } catch (err) {
+    return { status: 'error', message: err.toString() };
+  }
+}
+
+// Debug: Test Gemini AI
+function debugGemini(question = 'Apa itu Feisty?') {
+  try {
+    const customer = { name: 'Tester', phone: ADMIN_PHONE };
+    const response = getGeminiResponse(question, customer);
+    return {
+      status: 'success',
+      question: question,
+      response: response.substring(0, 500)
+    };
+  } catch (err) {
+    return { status: 'error', message: err.toString() };
+  }
+}
+
+// Debug: Test complete customer flow
+function debugCustomerFlow(phone = '6281234567890') {
+  try {
+    const customer = getCustomer(phone);
+    if (customer) {
+      return {
+        status: 'success',
+        found: true,
+        customer: customer
+      };
+    } else {
+      return {
+        status: 'success',
+        found: false,
+        message: 'Customer not found, will be created as new'
+      };
+    }
+  } catch (err) {
+    return { status: 'error', message: err.toString() };
+  }
+}
+
+// Debug: Test bot message template
+function debugBotMessage(key = 'welcome') {
+  try {
+    const msg = getBotMessage(key);
+    return {
+      status: 'success',
+      key: key,
+      message: msg || '(not found, using default)',
+      default: key === 'welcome' ? '👋 *Selamat Datang di Feisty*\n\nBoleh kami tahu *nama Kakak* untuk melanjutkan? 😊' : null
+    };
+  } catch (err) {
+    return { status: 'error', message: err.toString() };
+  }
+}
+
+// Debug: View all bot messages
+function debugAllBotMessages() {
+  try {
+    const msgs = getAllBotMessages();
+    if (!Array.isArray(msgs) || msgs.length === 0) {
+      return { status: 'warning', message: 'No bot messages found. Run setupSheets() first.' };
+    }
+    return {
+      status: 'success',
+      count: msgs.length,
+      messages: msgs.map(m => ({
+        key: m.key,
+        description: m.description,
+        preview: (m.message || '').substring(0, 100)
+      }))
+    };
+  } catch (err) {
+    return { status: 'error', message: err.toString() };
+  }
+}
+
+// Debug: View knowledge base
+function debugKnowledgeBase() {
+  try {
+    const kb = getAllCSKnowledge();
+    if (!Array.isArray(kb) || kb.length === 0) {
+      return { status: 'warning', message: 'No knowledge base found. Run setupSheets() first.' };
+    }
+    return {
+      status: 'success',
+      count: kb.length,
+      knowledge: kb.map(k => ({
+        kategori: k.kategori,
+        keywords: k.keywords,
+        jawaban: (k.jawaban || '').substring(0, 100)
+      }))
+    };
+  } catch (err) {
+    return { status: 'error', message: err.toString() };
+  }
+}
+
+// Quick test - send test WA
+function testWA() {
+  const msg = '🧪 *TEST WHATSAPP*\n\n' +
+    'Waktu: ' + new Date().toLocaleString('id-ID') + '\n' +
+    'Device ID: ' + DEVICE_ID + '\n' +
+    'API: ' + WA_API + '\n\n' +
+    'Jika pesan ini diterima, konfigurasi WA sudah benar!';
+  
+  const result = sendWA(ADMIN_PHONE, msg);
+  return 'Test WA sent. Response: ' + result;
+}
+
+// Quick test - view logs
+function viewLogs(limit = 20) {
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    let sh = ss.getSheetByName('Logs');
+    if (!sh) return 'Logs sheet not found';
+    
+    const data = sh.getDataRange().getValues();
+    if (data.length < 2) return 'No logs yet';
+    
+    const logs = data.slice(-limit);
+    let output = '=== LAST ' + limit + ' LOGS ===\n\n';
+    
+    logs.forEach((row, i) => {
+      if (i === 0) return; // Skip header
+      output += row[0] + ' | ' + row[1] + ': ' + row[2].substring(0, 200) + '\n';
+    });
+    
+    return output;
+  } catch (err) {
+    return 'Error: ' + err.toString();
+  }
+}
