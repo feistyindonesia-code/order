@@ -285,12 +285,40 @@ function doPost(e) {
       }
     }
     
-    if (body.action === 'ORDER') {
+    const action = body.action;
+    
+    // CRUD Actions
+    if (action === 'addMenu') {
+      return jsonResponse(addMenuItem(body));
+    }
+    if (action === 'updateMenu') {
+      return jsonResponse(updateMenuItem(body.row, body));
+    }
+    if (action === 'deleteMenu') {
+      return jsonResponse(deleteMenuItem(body.row));
+    }
+    if (action === 'addCustomer') {
+      return jsonResponse(addCustomer(body));
+    }
+    if (action === 'updateCustomer') {
+      return jsonResponse(updateCustomerByPhone(body.phone, body));
+    }
+    if (action === 'deleteCustomer') {
+      return jsonResponse(deleteCustomerByPhone(body.phone));
+    }
+    if (action === 'updateSetting') {
+      return jsonResponse(updateSetting(body.key, body.value));
+    }
+    if (action === 'updateLocation') {
+      return jsonResponse(updateLocation(body));
+    }
+    
+    if (action === 'ORDER') {
       handleOrderFromIndex(body);
       return jsonResponse({ status: 'success' });
     }
     
-    if (body.action === 'updateStatus') {
+    if (action === 'updateStatus') {
       const result = updateOrderStatus(body.order_id, body.status);
       return jsonResponse(result);
     }
@@ -776,6 +804,304 @@ Terima kasih! 🙏`;
       previousStatus: currentStatus,
       newStatus: newStatus
     };
+    
+  } catch (err) {
+    return { success: false, message: err.toString() };
+  }
+}
+
+// ==================================================
+// CRUD - MENU OPERATIONS
+// ==================================================
+
+// Add new menu item
+function addMenuItem(data) {
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sh = ss.getSheetByName(MENU_SHEET);
+    
+    if (!sh) {
+      return { success: false, message: 'Menu sheet tidak ditemukan' };
+    }
+    
+    sh.appendRow([
+      data.nama || '',
+      data.deskripsi || '',
+      data.harga || 0,
+      data.harga_asli || 0,
+      data.diskon_persen || 0,
+      data.kategori || 'Lainnya',
+      data.gambar || '',
+      data.aktif !== false,
+      data.urutan || 0
+    ]);
+    
+    return { success: true, message: 'Menu item berhasil ditambahkan' };
+    
+  } catch (err) {
+    return { success: false, message: err.toString() };
+  }
+}
+
+// Update menu item
+function updateMenuItem(rowNumber, data) {
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sh = ss.getSheetByName(MENU_SHEET);
+    
+    if (!sh) {
+      return { success: false, message: 'Menu sheet tidak ditemukan' };
+    }
+    
+    const row = parseInt(rowNumber) + 1; // +1 for header
+    
+    sh.getRange(row, 1).setValue(data.nama || '');
+    sh.getRange(row, 2).setValue(data.deskripsi || '');
+    sh.getRange(row, 3).setValue(data.harga || 0);
+    sh.getRange(row, 4).setValue(data.harga_asli || 0);
+    sh.getRange(row, 5).setValue(data.diskon_persen || 0);
+    sh.getRange(row, 6).setValue(data.kategori || 'Lainnya');
+    sh.getRange(row, 7).setValue(data.gambar || '');
+    sh.getRange(row, 8).setValue(data.aktif !== false);
+    sh.getRange(row, 9).setValue(data.urutan || 0);
+    
+    return { success: true, message: 'Menu item berhasil diperbarui' };
+    
+  } catch (err) {
+    return { success: false, message: err.toString() };
+  }
+}
+
+// Delete menu item
+function deleteMenuItem(rowNumber) {
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sh = ss.getSheetByName(MENU_SHEET);
+    
+    if (!sh) {
+      return { success: false, message: 'Menu sheet tidak ditemukan' };
+    }
+    
+    const row = parseInt(rowNumber) + 1; // +1 for header
+    sh.deleteRow(row);
+    
+    return { success: true, message: 'Menu item berhasil dihapus' };
+    
+  } catch (err) {
+    return { success: false, message: err.toString() };
+  }
+}
+
+// ==================================================
+// CRUD - CUSTOMER OPERATIONS
+// ==================================================
+
+// Add new customer
+function addCustomer(data) {
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sh = ss.getSheetByName(CUSTOMERS_SHEET);
+    
+    if (!sh) {
+      return { success: false, message: 'Customers sheet tidak ditemukan' };
+    }
+    
+    sh.appendRow([
+      data.phone || '',
+      data.nama || '',
+      data.alamat || '',
+      data.tipe_diskon || '',
+      data.nilai_diskon || 0,
+      'REGISTERED',
+      new Date(),
+      new Date()
+    ]);
+    
+    return { success: true, message: 'Customer berhasil ditambahkan' };
+    
+  } catch (err) {
+    return { success: false, message: err.toString() };
+  }
+}
+
+// Update customer
+function updateCustomer(rowNumber, data) {
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sh = ss.getSheetByName(CUSTOMERS_SHEET);
+    
+    if (!sh) {
+      return { success: false, message: 'Customers sheet tidak ditemukan' };
+    }
+    
+    const row = parseInt(rowNumber) + 1; // +1 for header
+    
+    sh.getRange(row, 1).setValue(data.phone || '');
+    sh.getRange(row, 2).setValue(data.nama || '');
+    sh.getRange(row, 3).setValue(data.alamat || '');
+    sh.getRange(row, 4).setValue(data.tipe_diskon || '');
+    sh.getRange(row, 5).setValue(data.nilai_diskon || 0);
+    sh.getRange(row, 8).setValue(new Date());
+    
+    return { success: true, message: 'Customer berhasil diperbarui' };
+    
+  } catch (err) {
+    return { success: false, message: err.toString() };
+  }
+}
+
+// Delete customer by phone
+function deleteCustomerByPhone(phone) {
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sh = ss.getSheetByName(CUSTOMERS_SHEET);
+    
+    if (!sh) {
+      return { success: false, message: 'Customers sheet tidak ditemukan' };
+    }
+    
+    const data = sh.getDataRange().getValues();
+    const normalizedPhone = normalizeNumber(phone);
+    
+    // Find the row
+    let rowToDelete = -1;
+    for (let i = 1; i < data.length; i++) {
+      if (normalizeNumber(String(data[i][0])) === normalizedPhone) {
+        rowToDelete = i + 1;
+        break;
+      }
+    }
+    
+    if (rowToDelete === -1) {
+      return { success: false, message: 'Customer tidak ditemukan' };
+    }
+    
+    sh.deleteRow(rowToDelete);
+    
+    return { success: true, message: 'Customer berhasil dihapus' };
+    
+  } catch (err) {
+    return { success: false, message: err.toString() };
+  }
+}
+
+// Update customer by phone (for admin)
+function updateCustomerByPhone(oldPhone, data) {
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sh = ss.getSheetByName(CUSTOMERS_SHEET);
+    
+    if (!sh) {
+      return { success: false, message: 'Customers sheet tidak ditemukan' };
+    }
+    
+    const dataRange = sh.getDataRange();
+    const values = dataRange.getValues();
+    const normalizedOldPhone = normalizeNumber(oldPhone);
+    
+    // Find the row by old phone number
+    let row = -1;
+    for (let i = 1; i < values.length; i++) {
+      if (normalizeNumber(String(values[i][0])) === normalizedOldPhone) {
+        row = i + 1;
+        break;
+      }
+    }
+    
+    if (row === -1) {
+      return { success: false, message: 'Customer tidak ditemukan' };
+    }
+    
+    // Update all columns
+    sh.getRange(row, 1).setValue(data.phone || '');
+    sh.getRange(row, 2).setValue(data.nama || '');
+    sh.getRange(row, 3).setValue(data.alamat || '');
+    sh.getRange(row, 4).setValue(data.tipe_diskon || '');
+    sh.getRange(row, 5).setValue(data.nilai_diskon || 0);
+    sh.getRange(row, 8).setValue(new Date());
+    
+    return { success: true, message: 'Customer berhasil diperbarui' };
+    
+  } catch (err) {
+    return { success: false, message: err.toString() };
+  }
+}
+
+// ==================================================
+// CRUD - SETTINGS OPERATIONS
+// ==================================================
+
+// Update setting by key
+function updateSetting(key, value) {
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sh = ss.getSheetByName(SETTINGS_SHEET);
+    
+    if (!sh) {
+      return { success: false, message: 'Pengaturan sheet tidak ditemukan' };
+    }
+    
+    const data = sh.getDataRange().getValues();
+    
+    // Find setting by key
+    let found = false;
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][0]).toLowerCase() === String(key).toLowerCase()) {
+        sh.getRange(i + 1, 2).setValue(value);
+        found = true;
+        break;
+      }
+    }
+    
+    if (!found) {
+      sh.appendRow([key, value, '']);
+    }
+    
+    return { success: true, message: 'Pengaturan berhasil diperbarui' };
+    
+  } catch (err) {
+    return { success: false, message: err.toString() };
+  }
+}
+
+// Get all settings
+function getAllSettings() {
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sh = ss.getSheetByName(SETTINGS_SHEET);
+    
+    if (!sh) return {};
+    
+    const data = sh.getDataRange().getValues();
+    const settings = {};
+    
+    for (let i = 1; i < data.length; i++) {
+      settings[String(data[i][0])] = data[i][1];
+    }
+    
+    return settings;
+    
+  } catch (err) {
+    return {};
+  }
+}
+
+// Update location
+function updateLocation(data) {
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sh = ss.getSheetByName(LOCATION_SHEET);
+    
+    if (!sh) {
+      return { success: false, message: 'Lokasi sheet tidak ditemukan' };
+    }
+    
+    // Update row 2 (after header)
+    sh.getRange(2, 1).setValue(data.nama_toko || 'Feisty Kitchen');
+    sh.getRange(2, 2).setValue(data.latitude || -6.2088);
+    sh.getRange(2, 3).setValue(data.longitude || 106.8456);
+    
+    return { success: true, message: 'Lokasi berhasil diperbarui' };
     
   } catch (err) {
     return { success: false, message: err.toString() };
