@@ -319,7 +319,7 @@ function doPost(e) {
     
     if (action === 'ORDER') {
       handleOrderFromIndex(body);
-      return jsonResponse({ status: 'success' });
+      return ok();
     }
     
     if (action === 'updateStatus') {
@@ -328,20 +328,15 @@ function doPost(e) {
     }
     
     // Handle WhatsApp messages from Whacenter
-    // Whacenter typically sends: from, body, id, timestamp
     const waPhone = normalizeNumber(body.from || body.number || body.sender || body.phone || "");
     const waText = (body.body || body.message || body.text || "").trim();
     
-    console.log('WA Phone:', waPhone);
-    console.log('WA Text:', waText);
-    
     if (!waPhone || !waText) {
-      console.log('No valid phone or text found');
-      return jsonResponse({ status: 'ok', message: 'No valid message' });
+      return ok();
     }
     
     handleIncomingWA(waPhone, waText);
-    return jsonResponse({ status: 'ok' });
+    return ok();
     
   } catch (err) {
     console.log('Error in doPost:', err.toString());
@@ -353,6 +348,10 @@ function jsonResponse(data) {
   return ContentService
     .createTextOutput(JSON.stringify(data))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+function ok() {
+  return ContentService.createTextOutput("OK");
 }
 
 // ==================================================
@@ -635,26 +634,58 @@ function handleIncomingWA(phone, text) {
     
     if (!customer) {
       saveNewCustomer(phone);
-      sendWA(phone, "👋 *Selamat Datang di Feisty*\n\nBoleh nama Kakak?");
+      sendWA(phone, msgAskName());
       return;
     }
     
     if (customer.state === "WAIT_NAME") {
       updateCustomer(customer.row, text, "MENU");
-      sendWA(phone, `✨ *Halo ${text}*!\n\n1. Order Menu\n2. Info Promo`);
+      sendWA(phone, msgMenu(text));
       return;
     }
     
     if (customer.state === "MENU") {
-      if (text === "1" || text.toLowerCase().includes("order")) {
-        sendWA(phone, "🛒 https://feisty.my.id/");
-      } else if (text === "2" || text.toLowerCase().includes("promo")) {
-        sendWA(phone, "🎉 *Promo Soon!*");
-      } else {
-        sendWA(phone, "Ketik *1* atau *2*");
+      const t = text.toLowerCase().trim();
+      if (t === "1" || t.includes("order") || t.includes("pesan") || t.includes("beli")) {
+        sendWA(phone, msgOrderLink(customer.name));
+        return;
       }
+      
+      if (t === "2" || t.includes("promo") || t.includes("diskon")) {
+        sendWA(phone, msgPromo(customer.name));
+        return;
+      }
+      
+      sendWA(phone, msgInvalidMenu(customer.name));
     }
-  } catch (err) {}
+  } catch (err) {
+    console.log('Error handleIncomingWA:', err.toString());
+  }
+}
+
+// ==================================================
+// CHATBOT MESSAGES
+// ==================================================
+function msgAskName() {
+  return `👋 *Selamat Datang di Feisty*
+
+Boleh kami tahu *nama Kakak* untuk melanjutkan? 😊`;
+}
+
+function msgMenu(name) {
+  return `✨ *Halo Kak ${name}!* ✨\n\nSilakan pilih:\n1️⃣ Order Menu  \n2️⃣ Info Promo`;
+}
+
+function msgInvalidMenu(name) {
+  return `⚠️ *Maaf Kak ${name}*\n\nPilihan tidak dikenali 🙏  \nSilakan ketik *1* atau *2*.`;
+}
+
+function msgOrderLink(name) {
+  return `🛒 *Order Online Feisty*\n\nHalo Kak *${name}* 😊  \nSilakan lanjutkan pemesanan melalui app kami 📱\n\n💳 Pembayaran:\n• QRIS (TemanQRIS)\n• COD (Bayar di tempat)`;
+}
+
+function msgPromo(name) {
+  return `🎉 *Promo Feisty*\n\nHalo Kak *${name}* 😄  \nPromo menarik segera hadir 🔥\n\nStay tuned ya! 👍`;
 }
 
 function getCustomer(phone) {
