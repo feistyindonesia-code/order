@@ -1,0 +1,1861 @@
+<!doctype html>
+<html lang="id">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Feisty - Pesan Sekarang</title>
+  <style>
+    body {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Arimo', Arial, sans-serif;
+    }
+    
+    html, body, #app-wrapper {
+      height: 100%;
+      width: 100%;
+    }
+    
+    #app-wrapper {
+      overflow: auto;
+      display: flex;
+      flex-direction: column;
+      background: linear-gradient(135deg, #fff8f0 0%, #ffe8d6 100%);
+    }
+
+    header {
+      background: linear-gradient(135deg, #FF4500 0%, #DC143C 100%);
+      color: white;
+      padding: 12px 20px;
+      text-align: center;
+      box-shadow: 0 4px 12px rgba(255, 69, 0, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    header img {
+      height: 70px;
+      width: auto;
+      object-fit: contain;
+    }
+
+    .back-btn {
+      position: absolute;
+      left: 16px;
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      border: none;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+
+    .back-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    .cart-toggle-btn {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: linear-gradient(135deg, #FF4500 0%, #DC143C 100%);
+      color: white;
+      border: none;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      font-size: 24px;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(255, 69, 0, 0.4);
+      z-index: 998;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .cart-toggle-btn:hover {
+      transform: scale(1.1);
+      box-shadow: 0 6px 20px rgba(255, 69, 0, 0.5);
+    }
+
+    .cart-badge {
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      background: #dc3545;
+      color: white;
+      font-size: 12px;
+      font-weight: bold;
+      min-width: 20px;
+      height: 20px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 6px;
+    }
+
+    main {
+      flex: 1;
+      padding: 20px;
+      max-width: 100%;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px 20px;
+      color: #666;
+      font-size: 16px;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 30px;
+      height: 30px;
+      border: 3px solid #FF4500;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-bottom: 16px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .error-msg {
+      background: #fee;
+      color: #c33;
+      padding: 16px;
+      border-radius: 8px;
+      margin: 16px 0;
+      border-left: 4px solid #c33;
+      line-height: 1.6;
+    }
+
+    .menu-container {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    
+    @media (min-width: 768px) {
+      .menu-container {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+        justify-items: center;
+      }
+    }
+    
+    @media (min-width: 1024px) {
+      .menu-container {
+        grid-template-columns: repeat(4, 1fr);
+      }
+    }
+    
+    .menu-item {
+      width: 100%;
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .menu-item:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 6px 16px rgba(255, 69, 0, 0.15);
+    }
+
+    .menu-image {
+      width: 100%;
+      height: 180px;
+      background: linear-gradient(135deg, #FFE0D6 0%, #FFF0E6 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 48px;
+      overflow: hidden;
+    }
+
+    .menu-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .menu-content {
+      padding: 16px;
+    }
+
+    .menu-name {
+      font-size: 18px;
+      font-weight: bold;
+      color: #1F2937;
+      margin: 0 0 8px 0;
+      line-height: 1.3;
+    }
+
+    .menu-category {
+      display: inline-block;
+      background: #FFE0D6;
+      color: #DC143C;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .menu-desc {
+      font-size: 13px;
+      color: #666;
+      margin: 8px 0;
+      line-height: 1.4;
+      height: 40px;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
+
+    .menu-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid #f0f0f0;
+    }
+
+    .menu-price {
+      font-size: 20px;
+      font-weight: bold;
+      color: #FF4500;
+    }
+
+    .menu-price .original-price {
+      font-size: 14px;
+      color: #999;
+      text-decoration: line-through;
+      margin-right: 8px;
+      font-weight: normal;
+    }
+
+    .menu-price .discount-badge {
+      display: inline-block;
+      background: #dc3545;
+      color: white;
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-left: 4px;
+      font-weight: bold;
+    }
+
+    .add-btn {
+      background: linear-gradient(135deg, #FF4500 0%, #DC143C 100%);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 13px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .add-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 12px rgba(255, 69, 0, 0.3);
+    }
+
+    .add-btn:active {
+      transform: scale(0.98);
+    }
+
+    .cart-section {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: white;
+      border-radius: 20px 20px 0 0;
+      padding: 0;
+      box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.15);
+      z-index: 999;
+      max-height: 60vh;
+      display: flex;
+      flex-direction: column;
+      transform: translateY(100%);
+      transition: transform 0.3s ease;
+    }
+    
+    @media (max-height: 600px) {
+      .cart-section {
+        max-height: 75vh;
+      }
+    }
+
+    .cart-section.open {
+      transform: translateY(0);
+    }
+
+    .cart-title {
+      font-size: 18px;
+      font-weight: bold;
+      color: #1F2937;
+      margin: 0;
+      padding: 16px 20px 8px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    #cart-items {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 24px;
+    }
+
+    .cart-close-btn {
+      background: none;
+      border: none;
+      font-size: 28px;
+      cursor: pointer;
+      color: #999;
+      padding: 0;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      transition: background 0.2s;
+    }
+
+    .cart-close-btn:hover {
+      background: #f0f0f0;
+    }
+
+    .cart-empty {
+      text-align: center;
+      color: #999;
+      padding: 40px 20px;
+      font-size: 15px;
+    }
+
+    .cart-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 0;
+      border-bottom: 1px solid #f0f0f0;
+      gap: 12px;
+    }
+
+    .cart-item:last-child {
+      border-bottom: none;
+    }
+
+    .cart-item-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .cart-item-name {
+      font-weight: 600;
+      color: #1F2937;
+      font-size: 15px;
+      margin-bottom: 4px;
+    }
+
+    .cart-item-price {
+      color: #FF4500;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    .cart-qty {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 0 8px;
+    }
+
+    .qty-btn {
+      background: #f5f5f5;
+      border: 1px solid #e5e5e5;
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      color: #FF4500;
+      font-size: 18px;
+      transition: all 0.2s;
+    }
+
+    .qty-btn:hover {
+      background: #FF4500;
+      color: white;
+      border-color: #FF4500;
+    }
+
+    .cart-remove {
+      background: #fef2f2;
+      color: #dc2626;
+      border: 1px solid #fecaca;
+      padding: 8px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .cart-remove:hover {
+      background: #dc2626;
+      color: white;
+    }
+
+    .cart-summary {
+      margin-top: 0;
+      padding: 16px 20px 20px 20px;
+      border-top: 2px solid #FF4500;
+      flex-shrink: 0;
+      background: linear-gradient(to bottom, #fff 0%, #fff9f5 100%);
+    }
+
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      margin: 6px 15px;
+      font-size: 15px;
+      color: #4b5563;
+    }
+
+    .summary-row.total {
+      font-size: 20px;
+      font-weight: bold;
+      color: #FF4500;
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px dashed #e5e5e5;
+    }
+
+    .checkout-btn {
+      width: 100%;
+      background: linear-gradient(135deg, #FF4500 0%, #DC143C 100%);
+      color: white;
+      border: none;
+      padding: 16px;
+      border-radius: 12px;
+      font-size: 17px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 20px;
+      transition: all 0.3s;
+      box-shadow: 0 4px 12px rgba(255, 69, 0, 0.3);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .checkout-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(255, 69, 0, 0.4);
+    }
+
+    .checkout-btn:active {
+      transform: translateY(0);
+    }
+
+    .checkout-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Search & Filter Styles */
+    .search-filter-container {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .search-box {
+      flex: 1;
+      min-width: 200px;
+      position: relative;
+    }
+
+    .search-box input {
+      width: 100%;
+      padding: 12px 16px 12px 44px;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      font-size: 14px;
+      background: white;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .search-box input:focus {
+      outline: none;
+      border-color: #FF4500;
+      box-shadow: 0 0 0 3px rgba(255, 69, 0, 0.1);
+    }
+
+    .search-box::before {
+      content: '🔍';
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 16px;
+    }
+
+    .category-filter {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .category-btn {
+      padding: 10px 16px;
+      border: 2px solid #e5e7eb;
+      border-radius: 20px;
+      background: white;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .category-btn:hover {
+      border-color: #FF4500;
+      color: #FF4500;
+    }
+
+    .category-btn.active {
+      background: linear-gradient(135deg, #FF4500 0%, #DC143C 100%);
+      color: white;
+      border-color: transparent;
+    }
+
+    .no-results {
+      text-align: center;
+      padding: 60px 20px;
+      color: #666;
+    }
+
+    .no-results span {
+      font-size: 48px;
+      display: block;
+      margin-bottom: 16px;
+    }
+  </style>
+  <style>@view-transition { navigation: auto; }</style>
+ </head>
+ <body>
+  <div id="app-wrapper">
+   <header><img src="https://imgur.com/E9ya4d5.png" alt="Logo" loading="lazy" onerror="console.error('Logo failed to load:', this.src); this.style.display='none';">
+    <button class="back-btn" onclick="window.location.href='index.html'">←</button>
+   </header>
+   <button class="cart-toggle-btn" id="cart-toggle-btn" onclick="toggleCart()">
+    <span style="font-size: 24px;">🛒</span>
+    <span class="cart-badge" id="cart-badge" style="display: none;">0</span>
+   </button>
+   <main>
+     <!-- Search & Filter -->
+     <div class="search-filter-container" id="search-filter" style="display: none;">
+       <div class="search-box">
+         <input type="text" id="menu-search" placeholder="Cari menu..." oninput="filterMenu()">
+       </div>
+       <div class="category-filter" id="category-filter"></div>
+     </div>
+     
+     <div id="menu-list" class="menu-container">
+      <div class="loading">
+       <div class="spinner"></div>
+       <p>MEMUAT MENU...</p>
+      </div>
+     </div>
+    </main>
+   <div class="cart-overlay" id="cart-overlay"></div>
+   <div class="cart-section" id="cart-section">
+    <h2 class="cart-title">KERANJANG <button class="cart-close-btn" id="cart-close-btn">x</button></h2>
+    <div id="cart-items" class="cart-empty">
+     KOSONG
+    </div>
+    <div id="cart-summary" style="display: none;">
+     <div class="summary-row"><span>Subtotal</span> <span id="subtotal">Rp 0</span>
+     </div>
+     <div class="summary-row"><span>Ongkir</span> <span id="shipping-cost">Rp 0</span>
+     </div>
+     <div class="summary-row total"><span>Total</span> <span id="total">Rp 0</span>
+     </div><button class="checkout-btn" id="checkout-btn">PESAN</button>
+    </div>
+   </div>
+  </div>
+  <script>
+    // URL GAS (single deployment)
+    const gasUrl = 'https://script.google.com/macros/s/AKfycbxvnehCIuEhnxAqSBdUqWS-9pJSCuGzdswSc4HntftjRCdoWccTKDdH20GqElNVXhR6/exec';
+
+    const config = {
+      qris_fee: 1000,
+      gas_url_bot: "https://script.google.com/macros/s/AKfycbxvnehCIuEhnxAqSBdUqWS-9pJSCuGzdswSc4HntftjRCdoWccTKDdH20GqElNVXhR6/exec",
+      base_shipping_cost: 10000,
+      shipping_cost_per_km: 2000,
+      free_shipping_min_distance: 5
+    };
+
+    // Lokasi toko akan diambil dari data GAS
+    let store_latitude = -6.2088;
+    let store_longitude = 106.8456;
+
+    let menuData = [];
+    let cartData = {};
+    let shippingCost = 0;
+    let customerInfo = null;
+    let selectedCategory = 'Semua';
+    let searchQuery = '';
+    
+    // Cache settings
+    const CACHE_KEY_MENU = 'feisty_menu_cache';
+    const CACHE_KEY_CONFIG = 'feisty_config_cache';
+    const CACHE_DURATION = 5 * 60 * 1000; // 5 menit
+    
+    function getCachedData(key) {
+      try {
+        const cached = localStorage.getItem(key);
+        if (!cached) return null;
+        
+        const data = JSON.parse(cached);
+        const now = Date.now();
+        
+        // Check if cache is expired
+        if (data.timestamp && (now - data.timestamp) < CACHE_DURATION) {
+          console.log('Using cached data for:', key);
+          return data.value;
+        }
+        
+        // Cache expired, remove it
+        localStorage.removeItem(key);
+        return null;
+      } catch (e) {
+        return null;
+      }
+    }
+    
+    function setCachedData(key, value) {
+      try {
+        localStorage.setItem(key, JSON.stringify({
+          timestamp: Date.now(),
+          value: value
+        }));
+        console.log('Cached data for:', key);
+      } catch (e) {
+        // localStorage might be full or disabled
+        console.warn('Failed to cache data:', e);
+      }
+    }
+
+    // Get customer phone from URL parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const customerPhone = urlParams.get('phone');
+
+    async function loadConfig() {
+      try {
+        const configUrl = gasUrl + '?action=getConfig';
+        const response = await fetch(configUrl);
+        
+        if (response.ok) {
+          const data = await response.json();
+          
+          // Update lokasi toko
+          if (data.latitude && data.longitude) {
+            store_latitude = parseFloat(data.latitude);
+            store_longitude = parseFloat(data.longitude);
+          }
+          
+          // Update ongkir dari spreadsheet
+          if (data.base_shipping_cost) {
+            config.base_shipping_cost = parseFloat(data.base_shipping_cost);
+          }
+          if (data.shipping_cost_per_km) {
+            config.shipping_cost_per_km = parseFloat(data.shipping_cost_per_km);
+          }
+          if (data.free_shipping_min_distance) {
+            config.free_shipping_min_distance = parseFloat(data.free_shipping_min_distance);
+          }
+          
+          console.log('Config dimuat dari GAS');
+          console.log('  Lokasi:', store_latitude, store_longitude);
+          console.log('  Ongkir:', config.base_shipping_cost, '+', config.shipping_cost_per_km, '/km');
+        }
+      } catch (error) {
+        console.warn('Gagal memuat config dari GAS, menggunakan default');
+      }
+    }
+
+    async function loadCustomerInfo() {
+      if (!customerPhone) {
+        console.log('Tidak ada phone di URL, mode guest');
+        return;
+      }
+      
+      try {
+        const customerUrl = gasUrl + '?action=getCustomer&phone=' + encodeURIComponent(customerPhone);
+        const response = await fetch(customerUrl);
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data && data.nama) {
+            customerInfo = data;
+            console.log('Customer dimuat:', customerInfo.nama);
+          }
+        }
+      } catch (error) {
+        console.warn('Gagal memuat customer info');
+      }
+    }
+
+    async function loadMenu() {
+      try {
+        // Try to load from cache first
+        const cachedMenu = getCachedData(CACHE_KEY_MENU);
+        if (cachedMenu && Array.isArray(cachedMenu) && cachedMenu.length > 0) {
+          menuData = cachedMenu;
+          renderMenu();
+          
+          // Still load config in background
+          loadConfig();
+          loadCustomerInfo();
+          return;
+        }
+        
+        // Load config dulu
+        await loadConfig();
+        // Load customer info jika ada
+        await loadCustomerInfo();
+        
+        const menuUrl = gasUrl + '?action=getMenu';
+        const response = await fetch(menuUrl);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (!Array.isArray(data) || data.length === 0) {
+          document.getElementById('menu-list').innerHTML = '<div class="error-msg">MENU KOSONG. Pastikan data ada di sheet.</div>';
+          return;
+        }
+        
+        menuData = data.map(item => ({
+          id: String(item.id),
+          name: item.nama || '',
+          desc: item.deskripsi || '',
+          price: item.harga_diskon || item.harga || 0,
+          originalPrice: item.harga_asli || 0,
+          discountPercent: item.diskon_persen || 0,
+          hasDiscount: item.has_discount || false,
+          category: item.kategori || 'Lainnya',
+          image: item.gambar || ''
+        }));
+        
+        // Cache the menu data
+        setCachedData(CACHE_KEY_MENU, menuData);
+        
+        renderMenu();
+      } catch (error) {
+        console.error('Error loading menu:', error);
+        
+        // Try to use cached data as fallback
+        const cachedMenu = getCachedData(CACHE_KEY_MENU);
+        if (cachedMenu && Array.isArray(cachedMenu) && cachedMenu.length > 0) {
+          menuData = cachedMenu;
+          renderMenu();
+          return;
+        }
+        
+        document.getElementById('menu-list').innerHTML = '<div class="error-msg">Gagal memuat menu. Cek koneksi atau GAS URL.</div>';
+      }
+    }
+
+    function formatPrice(price) {
+      return price.toLocaleString('id-ID');
+    }
+
+    function renderMenu() {
+      const container = document.getElementById('menu-list');
+      
+      // Show search & filter
+      document.getElementById('search-filter').style.display = 'flex';
+      
+      // Build category buttons
+      const categories = ['Semua', ...new Set(menuData.map(item => item.category))];
+      const categoryFilter = document.getElementById('category-filter');
+      categoryFilter.innerHTML = categories.map(cat => 
+        `<button class="category-btn ${selectedCategory === cat ? 'active' : ''}" onclick="selectCategory('${escapeHtml(cat)}')">${escapeHtml(cat)}</button>`
+      ).join('');
+      
+      // Filter menu
+      let filteredMenu = menuData;
+      
+      // Filter by category
+      if (selectedCategory !== 'Semua') {
+        filteredMenu = filteredMenu.filter(item => item.category === selectedCategory);
+      }
+      
+      // Filter by search query
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        filteredMenu = filteredMenu.filter(item => 
+          item.name.toLowerCase().includes(query) || 
+          item.desc.toLowerCase().includes(query) ||
+          item.category.toLowerCase().includes(query)
+        );
+      }
+      
+      // Render filtered menu
+      container.innerHTML = '';
+      
+      if (filteredMenu.length === 0) {
+        container.innerHTML = `
+          <div class="no-results">
+            <span>🔍</span>
+            <p>Tidak ada menu yang ditemukan</p>
+          </div>
+        `;
+        return;
+      }
+      
+      filteredMenu.forEach(item => {
+        const hasImage = item.image && item.image.startsWith('data:');
+        
+        // Build price HTML
+        let priceHtml = '';
+        if (item.hasDiscount && item.originalPrice > item.price) {
+          priceHtml = `
+            <span class="original-price">Rp ${formatPrice(item.originalPrice)}</span>
+            <span class="discount-badge">-${item.discountPercent}%</span>
+            <br>
+            <span>Rp ${formatPrice(item.price)}</span>
+          `;
+        } else {
+          priceHtml = `Rp ${formatPrice(item.price)}`;
+        }
+        
+        const html = `
+          <div class="menu-item">
+            <div class="menu-image">
+              ${hasImage 
+                ? `<img src="${item.image}" alt="${item.name}" loading="lazy" onerror="this.parentElement.innerHTML='[Gambar]';" />` 
+                : '[Gambar]'}
+            </div>
+            <div class="menu-content">
+              <h3 class="menu-name">${escapeHtml(item.name)}</h3>
+              <span class="menu-category">${escapeHtml(item.category)}</span>
+              <p class="menu-desc">${escapeHtml(item.desc)}</p>
+              <div class="menu-footer">
+                <div class="menu-price">${priceHtml}</div>
+                <button class="add-btn" onclick="addToCart('${item.id}', '${item.name}', ${item.price})">+</button>
+              </div>
+            </div>
+          </div>
+        `;
+        container.innerHTML += html;
+      });
+    }
+
+    function selectCategory(category) {
+      selectedCategory = category;
+      renderMenu();
+    }
+
+    function filterMenu() {
+      searchQuery = document.getElementById('menu-search').value;
+      renderMenu();
+    }
+
+    function escapeHtml(text) {
+      const map = {
+        '&': '&',
+        '<': '<',
+        '>': '>',
+        '"': '"',
+        "'": '&#039;'
+      };
+      return String(text).replace(/[&<>"']/g, m => map[m]);
+    }
+
+    function addToCart(id, name, price) {
+      if (!cartData[id]) {
+        cartData[id] = { name, price, qty: 0 };
+      }
+      cartData[id].qty++;
+      updateCart();
+      document.getElementById('cart-section').classList.add('open');
+    }
+
+    function updateCart() {
+      const items = Object.entries(cartData);
+      const cartContainer = document.getElementById('cart-items');
+      const summaryDiv = document.getElementById('cart-summary');
+      const badge = document.getElementById('cart-badge');
+      
+      // Update badge count
+      const totalItems = Object.values(cartData).reduce((sum, item) => sum + item.qty, 0);
+      if (totalItems > 0) {
+        badge.textContent = totalItems;
+        badge.style.display = 'flex';
+      } else {
+        badge.style.display = 'none';
+      }
+      
+      if (items.length === 0) {
+        cartContainer.innerHTML = '<div class="cart-empty">Keranjang kosong</div>';
+        summaryDiv.style.display = 'none';
+        return;
+      }
+      
+      cartContainer.innerHTML = '';
+      let total = 0;
+      
+      items.forEach(([id, item]) => {
+        const subtotal = item.price * item.qty;
+        total += subtotal;
+        
+        const html = `
+          <div class="cart-item">
+            <div class="cart-item-info">
+              <div class="cart-item-name">${escapeHtml(item.name)}</div>
+              <div class="cart-item-price">${formatPrice(item.price)} x ${item.qty}</div>
+            </div>
+            <div class="cart-qty">
+              <button class="qty-btn" onclick="changeQty('${id}', -1)">-</button>
+              <span style="min-width: 30px; text-align: center; font-weight: bold;">${item.qty}</span>
+              <button class="qty-btn" onclick="changeQty('${id}', 1)">+</button>
+            </div>
+            <button class="cart-remove" onclick="removeFromCart('${id}')">x</button>
+          </div>
+        `;
+        cartContainer.innerHTML += html;
+      });
+      
+      document.getElementById('subtotal').textContent = `${formatPrice(total)}`;
+      document.getElementById('total').textContent = `${formatPrice(total + shippingCost)}`;
+      summaryDiv.style.display = 'block';
+    }
+
+    function changeQty(id, change) {
+      cartData[id].qty += change;
+      if (cartData[id].qty <= 0) {
+        delete cartData[id];
+      }
+      updateCart();
+    }
+
+    function removeFromCart(id) {
+      delete cartData[id];
+      updateCart();
+    }
+
+    function generateOrderId() {
+      return 'ORD-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+    }
+
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+      const R = 6371;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = 
+        Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon/2) * Math.sin(dLon/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      return R * c;
+    }
+
+    function calculateShippingCost(distance) {
+      const baseCost = config.base_shipping_cost;
+      const costPerKm = config.shipping_cost_per_km;
+      const freeMinDistance = config.free_shipping_min_distance || 0;
+      
+      // Gratis ongkir jika jarak <= minimum
+      if (distance <= freeMinDistance && freeMinDistance > 0) {
+        return 0;
+      }
+      
+      const additionalCost = Math.ceil(distance) * costPerKm;
+      return baseCost + additionalCost;
+    }
+
+    // QRIS generation via server-side (AMAN - API key tidak terbuka)
+    let qrisRetryCount = 0;
+    const MAX_QRIS_RETRIES = 3;
+    
+    async function generateQRIS(amount, retry = false) {
+      try {
+        if (retry) {
+          qrisRetryCount++;
+          if (qrisRetryCount > MAX_QRIS_RETRIES) {
+            return {
+              success: false,
+              error: 'Gagal setelah ' + MAX_QRIS_RETRIES + ' percobaan. Silakan coba COD.'
+            };
+          }
+        } else {
+          qrisRetryCount = 0;
+        }
+        
+        // Call server-side endpoint untuk generate QRIS
+        const response = await fetch(gasUrl + '?action=generateQRIS&amount=' + amount);
+        
+        if (!response.ok) {
+          throw new Error('Server error: ' + response.status);
+        }
+        
+        const data = await response.json();
+        
+        if (!data.success) {
+          throw new Error(data.error || 'Gagal generate QRIS');
+        }
+        
+        return {
+          success: true,
+          qr_image: data.qr_image,
+          qris_string: data.qris_string,
+          link_code: data.link_code,
+          amount: data.amount,
+          fee: data.fee,
+          expires_at: data.expires_at
+        };
+      } catch (error) {
+        console.error('Error generating QRIS:', error);
+        
+        // Return dengan opsi retry
+        return {
+          success: false,
+          error: error.message,
+          canRetry: qrisRetryCount < MAX_QRIS_RETRIES
+        };
+      }
+    }
+
+    function showPaymentModal() {
+      const modal = document.createElement('div');
+      modal.id = 'payment-modal';
+      modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+      `;
+
+      const content = document.createElement('div');
+      content.style.cssText = `
+        background: white;
+        border-radius: 12px;
+        padding: 24px;
+        max-width: 400px;
+        width: 90%;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+      `;
+
+      const title = document.createElement('h2');
+      title.textContent = 'PEMBAYARAN';
+      title.style.cssText = `
+        margin: 0 0 20px 0;
+        font-size: 18px;
+        color: #1F2937;
+        text-align: center;
+      `;
+      content.appendChild(title);
+
+      const codBtn = document.createElement('button');
+      codBtn.textContent = 'COD (Bayar di Tempat)';
+      codBtn.style.cssText = `
+        width: 100%;
+        padding: 14px;
+        margin-bottom: 12px;
+        background: linear-gradient(135deg, #FF4500 0%, #DC143C 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.2s;
+      `;
+      codBtn.onmouseover = () => codBtn.style.transform = 'translateY(-2px)';
+      codBtn.onmouseout = () => codBtn.style.transform = 'translateY(0)';
+      codBtn.onclick = () => showCustomerForm('COD', modal);
+      content.appendChild(codBtn);
+
+      const qrisBtn = document.createElement('button');
+      qrisBtn.textContent = 'QRIS';
+      qrisBtn.style.cssText = `
+        width: 100%;
+        padding: 14px;
+        margin-bottom: 12px;
+        background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.2s;
+      `;
+      qrisBtn.onmouseover = () => qrisBtn.style.transform = 'translateY(-2px)';
+      qrisBtn.onmouseout = () => qrisBtn.style.transform = 'translateY(0)';
+      qrisBtn.onclick = () => showCustomerForm('QRIS', modal);
+      content.appendChild(qrisBtn);
+
+      const cancelBtn = document.createElement('button');
+      cancelBtn.textContent = 'BATAL';
+      cancelBtn.style.cssText = `
+        width: 100%;
+        padding: 12px;
+        background: #f0f0f0;
+        color: #666;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s;
+      `;
+      cancelBtn.onmouseover = () => cancelBtn.style.background = '#e0e0e0';
+      cancelBtn.onmouseout = () => cancelBtn.style.background = '#f0f0f0';
+      cancelBtn.onclick = () => modal.remove();
+      content.appendChild(cancelBtn);
+
+      modal.appendChild(content);
+      document.body.appendChild(modal);
+    }
+
+    function showCustomerForm(paymentMethod, modal) {
+      modal.remove();
+      
+      const formModal = document.createElement('div');
+      formModal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        overflow-y: auto;
+      `;
+
+      const formContent = document.createElement('div');
+      formContent.style.cssText = `
+        background: white;
+        border-radius: 12px;
+        padding: 24px;
+        max-width: 450px;
+        width: 90%;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        margin: 20px auto;
+      `;
+
+      const formTitle = document.createElement('h2');
+      formTitle.textContent = 'PENGIRIMAN';
+      formTitle.style.cssText = `
+        margin: 0 0 20px 0;
+        font-size: 18px;
+        color: #1F2937;
+        text-align: center;
+      `;
+      formContent.appendChild(formTitle);
+
+      // Customer info display (if logged in from WhatsApp)
+      if (customerInfo) {
+        const customerDiv = document.createElement('div');
+        customerDiv.style.cssText = `
+          background: #f0fff0;
+          border: 1px solid #90EE90;
+          border-radius: 8px;
+          padding: 12px;
+          margin-bottom: 16px;
+        `;
+        customerDiv.innerHTML = `
+          <p style="margin: 0 0 4px 0; font-weight: 600; color: #1F2937;">${escapeHtml(customerInfo.nama)}</p>
+          <p style="margin: 0; font-size: 13px; color: #666;">${escapeHtml(customerInfo.alamat || 'Alamat belum diisi')}</p>
+        `;
+        formContent.appendChild(customerDiv);
+      }
+
+      // Show name/phone/address inputs for guests
+      let nameValue = '';
+      let phoneValue = '';
+      let addressValue = '';
+      
+      if (customerInfo) {
+        nameValue = customerInfo.nama || '';
+        phoneValue = customerInfo.phone || '';
+        addressValue = customerInfo.alamat || '';
+      }
+
+      // Only show inputs if not logged in or no customer info
+      if (!customerInfo) {
+        const nameLabel = document.createElement('label');
+        nameLabel.textContent = 'Nama';
+        nameLabel.style.cssText = 'display: block; margin-bottom: 6px; font-size: 14px; font-weight: 600; color: #333;';
+        formContent.appendChild(nameLabel);
+
+        const nameInput = document.createElement('input');
+        nameInput.type = 'text';
+        nameInput.value = nameValue;
+        nameInput.style.cssText = `
+          width: 100%;
+          padding: 10px;
+          margin-bottom: 16px;
+          border: 1px solid #ddd;
+          border-radius: 6px;
+          font-size: 14px;
+          box-sizing: border-box;
+        `;
+        nameInput.id = 'customer-name';
+        formContent.appendChild(nameInput);
+
+        const phoneLabel = document.createElement('label');
+        phoneLabel.textContent = 'WhatsApp';
+        phoneLabel.style.cssText = 'display: block; margin-bottom: 6px; font-size: 14px; font-weight: 600; color: #333;';
+        formContent.appendChild(phoneLabel);
+
+        const phoneInput = document.createElement('input');
+        phoneInput.type = 'tel';
+        phoneInput.value = phoneValue;
+        phoneInput.style.cssText = `
+          width: 100%;
+          padding: 10px;
+          margin-bottom: 16px;
+          border: 1px solid #ddd;
+          border-radius: 6px;
+          font-size: 14px;
+          box-sizing: border-box;
+        `;
+        phoneInput.id = 'customer-phone';
+        formContent.appendChild(phoneInput);
+
+        const addressLabel = document.createElement('label');
+        addressLabel.textContent = 'Alamat';
+        addressLabel.style.cssText = 'display: block; margin-bottom: 6px; font-size: 14px; font-weight: 600; color: #333;';
+        formContent.appendChild(addressLabel);
+
+        const addressInput = document.createElement('textarea');
+        addressInput.value = addressValue;
+        addressInput.placeholder = 'Jl. Contoh No. 123, Kelurahan, Kecamatan, Kota';
+        addressInput.style.cssText = `
+          width: 100%;
+          padding: 10px;
+          margin-bottom: 16px;
+          border: 1px solid #ddd;
+          border-radius: 6px;
+          font-size: 14px;
+          box-sizing: border-box;
+          resize: vertical;
+          min-height: 80px;
+          font-family: Arimo, Arial, sans-serif;
+        `;
+        addressInput.id = 'customer-address';
+        formContent.appendChild(addressInput);
+      }
+
+      const locationLabel = document.createElement('label');
+      locationLabel.textContent = 'Lokasi Pengiriman *WAJIB';
+      locationLabel.style.cssText = 'display: block; margin-bottom: 6px; font-size: 14px; font-weight: 600; color: #333;';
+      formContent.appendChild(locationLabel);
+
+      const locationDisplay = document.createElement('div');
+      locationDisplay.style.cssText = `
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 8px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 13px;
+        background: #f9f9f9;
+        color: #666;
+        text-align: center;
+        min-height: 50px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      `;
+      locationDisplay.textContent = 'Tekan tombol untuk ambil lokasi';
+      formContent.appendChild(locationDisplay);
+
+      let latitude = null;
+      let longitude = null;
+
+      const shareLocBtn = document.createElement('button');
+      shareLocBtn.type = 'button';
+      shareLocBtn.textContent = 'Ambil Lokasi';
+      shareLocBtn.style.cssText = `
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 8px;
+        background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+      `;
+      shareLocBtn.onmouseover = () => shareLocBtn.style.transform = 'translateY(-2px)';
+      shareLocBtn.onmouseout = () => shareLocBtn.style.transform = 'translateY(0)';
+      
+      function updateLocationDisplay() {
+        if (latitude && longitude && !isNaN(latitude) && !isNaN(longitude)) {
+          const distance = calculateDistance(store_latitude, store_longitude, latitude, longitude);
+          shippingCost = calculateShippingCost(distance);
+          
+          locationDisplay.innerHTML = `
+            <span style="color: #10B981; font-weight: 600;">Lokasi Terdeteksi</span><br>
+            <span style="font-size: 12px; color: #666; margin-top: 4px;">${latitude.toFixed(4)}, ${longitude.toFixed(4)}</span><br>
+            <span style="font-size: 12px; color: #666; margin-top: 4px;">Jarak: ${distance.toFixed(2)} km${shippingCost === 0 ? ' | GRATIS!' : ' | Ongkir: ' + formatPrice(shippingCost)}</span>
+          `;
+          shareLocBtn.textContent = 'Lokasi Siap';
+          shareLocBtn.style.background = '#10B981';
+          updateCart();
+        }
+      }
+      
+      shareLocBtn.onclick = (e) => {
+        e.preventDefault();
+        if (navigator.geolocation) {
+          // Show loading state dengan spinner
+          shareLocBtn.innerHTML = '<span class="spinner" style="width:16px;height:16px;border-width:2px;margin-right:8px;"></span>Mengambil...';
+          shareLocBtn.disabled = true;
+          locationDisplay.innerHTML = '<span class="spinner" style="width:20px;height:20px;border-width:2px;"></span><br><span style="font-size:12px;color:#666;margin-top:8px;">Mendeteksi lokasi...</span>';
+          
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              latitude = position.coords.latitude;
+              longitude = position.coords.longitude;
+              updateLocationDisplay();
+              shareLocBtn.disabled = false;
+            },
+            (error) => {
+              let errorMsg = 'Izinkan akses lokasi';
+              if (error.code === 1) errorMsg = 'Akses lokasi ditolak';
+              else if (error.code === 2) errorMsg = 'Lokasi tidak tersedia';
+              else if (error.code === 3) errorMsg = 'Timeout - coba lagi';
+              
+              locationDisplay.innerHTML = `
+                <span style="color: #c33;">Gagal</span><br>
+                <span style="font-size: 12px; color: #666;">${errorMsg}</span>
+              `;
+              shareLocBtn.textContent = 'Ambil Lokasi';
+              shareLocBtn.style.background = 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)';
+              shareLocBtn.disabled = false;
+            },
+            { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+          );
+        } else {
+          locationDisplay.innerHTML = `
+            <span style="color: #c33;">Tidak didukung</span>
+          `;
+        }
+      };
+      formContent.appendChild(shareLocBtn);
+
+      const btnContainer = document.createElement('div');
+      btnContainer.style.cssText = 'display: flex; gap: 12px; margin-top: 20px;';
+
+      const submitBtn = document.createElement('button');
+      submitBtn.textContent = paymentMethod === 'QRIS' ? 'BAYAR' : 'PESAN';
+      submitBtn.style.cssText = `
+        flex: 1;
+        padding: 12px;
+        background: linear-gradient(135deg, #FF4500 0%, #DC143C 100%);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.2s;
+      `;
+      submitBtn.onmouseover = () => submitBtn.style.transform = 'translateY(-2px)';
+      submitBtn.onmouseout = () => submitBtn.style.transform = 'translateY(0)';
+      
+      let customerName = nameValue;
+      let customerPhone = phoneValue;
+      let customerAddress = addressValue;
+
+      submitBtn.onclick = async () => {
+        // Validate location is required
+        if (!latitude || !longitude || isNaN(latitude) || isNaN(longitude)) {
+          alert('Lokasi pengiriman WAJIB!\n\nSilakan tekan tombol "Ambil Lokasi" untuk membagikan lokasi Anda.');
+          return;
+        }
+
+        // Get input values if not from customer info
+        if (!customerInfo) {
+          const nameEl = document.getElementById('customer-name');
+          const phoneEl = document.getElementById('customer-phone');
+          const addressEl = document.getElementById('customer-address');
+          
+          if (nameEl) customerName = nameEl.value.trim();
+          if (phoneEl) customerPhone = phoneEl.value.trim();
+          if (addressEl) customerAddress = addressEl.value.trim();
+          
+          if (!customerName || !customerPhone || !customerAddress) {
+            alert('Harap lengkapi data: Nama, WhatsApp, dan Alamat');
+            return;
+          }
+        }
+
+        if (paymentMethod === 'QRIS') {
+           submitBtn.disabled = true;
+           submitBtn.textContent = 'Memproses...';
+           
+           const total = Object.values(cartData).reduce((sum, item) => sum + (item.price * item.qty), 0);
+           const totalWithShipping = total + shippingCost;
+           const qrisResult = await generateQRIS(totalWithShipping);
+           
+           submitBtn.disabled = false;
+           submitBtn.textContent = paymentMethod === 'QRIS' ? 'BAYAR' : 'PESAN';
+           
+           if (qrisResult.success) {
+             showQRISPaymentStep(paymentMethod, customerName, customerPhone, customerAddress, latitude, longitude, formModal, qrisResult);
+           } else {
+             // Show error with retry option
+             const retryDiv = document.createElement('div');
+             retryDiv.style.cssText = `
+               position: fixed;
+               top: 50%;
+               left: 50%;
+               transform: translate(-50%, -50%);
+               background: white;
+               padding: 24px;
+               border-radius: 12px;
+               box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+               z-index: 1002;
+               text-align: center;
+               max-width: 320px;
+             `;
+             retryDiv.innerHTML = `
+               <p style="margin: 0 0 16px 0; font-size: 16px; color: #c33;">Gagal membuat QRIS</p>
+               <p style="margin: 0 0 20px 0; font-size: 14px; color: #666;">${qrisResult.error}</p>
+               <div style="display: flex; gap: 12px; justify-content: center;">
+                 <button id="retry-qris-btn" style="padding: 10px 20px; background: #FF4500; color: white; border: none; border-radius: 6px; cursor: pointer;">Coba Lagi</button>
+                 <button id="fallback-cod-btn" style="padding: 10px 20px; background: #10B981; color: white; border: none; border-radius: 6px; cursor: pointer;">Pakai COD</button>
+               </div>
+             `;
+             document.body.appendChild(retryDiv);
+             
+             document.getElementById('retry-qris-btn').onclick = async () => {
+               retryDiv.remove();
+               submitBtn.click(); // Re-trigger submit
+             };
+             
+             document.getElementById('fallback-cod-btn').onclick = () => {
+               retryDiv.remove();
+               processOrder('COD', customerName, customerPhone, customerAddress, latitude, longitude, formModal);
+             };
+           }
+         } else {
+           processOrder(paymentMethod, customerName, customerPhone, customerAddress, latitude, longitude, formModal);
+         }
+      };
+      btnContainer.appendChild(submitBtn);
+
+      const cancelBtn = document.createElement('button');
+      cancelBtn.textContent = 'Batal';
+      cancelBtn.style.cssText = `
+        flex: 1;
+        padding: 12px;
+        background: #f0f0f0;
+        color: #666;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s;
+      `;
+      cancelBtn.onmouseover = () => cancelBtn.style.background = '#e0e0e0';
+      cancelBtn.onmouseout = () => cancelBtn.style.background = '#f0f0f0';
+      cancelBtn.onclick = () => formModal.remove();
+      btnContainer.appendChild(cancelBtn);
+
+      formContent.appendChild(btnContainer);
+      formModal.appendChild(formContent);
+      document.body.appendChild(formModal);
+    }
+
+    function showQRISPaymentStep(paymentMethod, customerName, customerPhone, customerAddress, latitude, longitude, formModal, qrisData) {
+      formModal.remove();
+
+      const qrisModal = document.createElement('div');
+      qrisModal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        overflow-y: auto;
+      `;
+
+      const qrisContent = document.createElement('div');
+      qrisContent.style.cssText = `
+        background: white;
+        border-radius: 12px;
+        padding: 24px;
+        max-width: 450px;
+        width: 90%;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        margin: 20px auto;
+        text-align: center;
+      `;
+
+      const qrisTitle = document.createElement('h2');
+      qrisTitle.textContent = 'SCAN QRIS';
+      qrisTitle.style.cssText = `
+        margin: 0 0 16px 0;
+        font-size: 18px;
+        color: #1F2937;
+      `;
+      qrisContent.appendChild(qrisTitle);
+
+      const qrisContainer = document.createElement('div');
+      qrisContainer.style.cssText = `
+        background: linear-gradient(135deg, #F3E8FF 0%, #EDE9FE 100%);
+        border: 3px solid #7C3AED;
+        border-radius: 12px;
+        padding: 20px;
+        text-align: center;
+        margin-bottom: 20px;
+      `;
+
+      const qrImage = document.createElement('img');
+      qrImage.src = qrisData.qr_image;
+      qrImage.alt = 'QRIS Code';
+      qrImage.style.cssText = `
+        width: 250px;
+        height: 250px;
+        border: 3px solid white;
+        border-radius: 8px;
+        margin: 0 auto 12px auto;
+        display: block;
+      `;
+      qrisContainer.appendChild(qrImage);
+
+      const total = Object.values(cartData).reduce((sum, item) => sum + (item.price * item.qty), 0);
+      const totalWithShipping = total + shippingCost;
+      
+      const amountDiv = document.createElement('div');
+      amountDiv.style.cssText = `
+        font-size: 14px;
+        color: #666;
+        line-height: 1.6;
+      `;
+      amountDiv.innerHTML = `
+        <p style="margin: 0; font-weight: 600; color: #1F2937;">${formatPrice(totalWithShipping)}</p>
+        <p style="margin: 4px 0 0 0; font-size: 12px; color: #666;">Subtotal: ${formatPrice(total)} + Ongkir: ${formatPrice(shippingCost)}</p>
+      `;
+      qrisContainer.appendChild(amountDiv);
+
+      qrisContent.appendChild(qrisContainer);
+
+      const btnContainer = document.createElement('div');
+      btnContainer.style.cssText = 'display: flex; gap: 12px;';
+
+      const confirmPaymentBtn = document.createElement('button');
+      confirmPaymentBtn.textContent = 'SUDAH BAYAR';
+      confirmPaymentBtn.style.cssText = `
+        flex: 1;
+        padding: 12px;
+        background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.2s;
+      `;
+      confirmPaymentBtn.onmouseover = () => confirmPaymentBtn.style.transform = 'translateY(-2px)';
+      confirmPaymentBtn.onmouseout = () => confirmPaymentBtn.style.transform = 'translateY(0)';
+      confirmPaymentBtn.onclick = async () => {
+        processOrder(paymentMethod, customerName, customerPhone, customerAddress, latitude, longitude, qrisModal, qrisData);
+      };
+      btnContainer.appendChild(confirmPaymentBtn);
+
+      const backBtn = document.createElement('button');
+      backBtn.textContent = 'Kembali';
+      backBtn.style.cssText = `
+        flex: 1;
+        padding: 12px;
+        background: #f0f0f0;
+        color: #666;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s;
+      `;
+      backBtn.onmouseover = () => backBtn.style.background = '#e0e0e0';
+      backBtn.onmouseout = () => backBtn.style.background = '#f0f0f0';
+      backBtn.onclick = () => qrisModal.remove();
+      btnContainer.appendChild(backBtn);
+
+      qrisContent.appendChild(btnContainer);
+      qrisModal.appendChild(qrisContent);
+      document.body.appendChild(qrisModal);
+    }
+
+    async function processOrder(paymentMethod, customerName, customerPhone, customerAddress, latitude, longitude, formModal, qrisData = null) {
+      const loadingModal = document.createElement('div');
+      loadingModal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1001;
+        overflow-y: auto;
+      `;
+
+      const loadingContent = document.createElement('div');
+      loadingContent.style.cssText = `
+        background: white;
+        border-radius: 12px;
+        padding: 40px;
+        max-width: 400px;
+        width: 90%;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        text-align: center;
+        margin: 20px auto;
+      `;
+
+      const spinner = document.createElement('div');
+      spinner.style.cssText = `
+        display: inline-block;
+        width: 50px;
+        height: 50px;
+        border: 4px solid #FF4500;
+        border-top-color: transparent;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        margin-bottom: 20px;
+      `;
+      loadingContent.appendChild(spinner);
+
+      const loadingText = document.createElement('p');
+      loadingText.textContent = 'Memproses...';
+      loadingText.style.cssText = `
+        margin: 0;
+        font-size: 16px;
+        color: #1F2937;
+        font-weight: 600;
+      `;
+      loadingContent.appendChild(loadingText);
+
+      loadingModal.appendChild(loadingContent);
+      document.body.appendChild(loadingModal);
+
+      formModal.remove();
+
+      try {
+        const orderId = generateOrderId();
+        const items = Object.entries(cartData).map(([_, item]) => ({
+          name: item.name,
+          price: item.price,
+          qty: item.qty
+        }));
+        const subtotal = Object.values(cartData).reduce((sum, item) => sum + (item.price * item.qty), 0);
+        const totalWithShipping = subtotal + shippingCost;
+
+        let locationString = '';
+        if (latitude && longitude && !isNaN(latitude) && !isNaN(longitude)) {
+          locationString = `https://maps.google.com/?q=${latitude},${longitude}`;
+        }
+
+        let qrisInfo = '';
+        if (paymentMethod === 'QRIS' && qrisData && qrisData.success) {
+          qrisInfo = `QRIS: ${qrisData.qris_string}`;
+        }
+
+        const gasWebhookUrl = config.gas_url_bot;
+        
+        const orderPayload = {
+          action: 'ORDER',
+          order_id: orderId,
+          customer_name: customerName,
+          customer_phone: customerPhone,
+          customer_address: customerAddress,
+          latitude: latitude,
+          longitude: longitude,
+          location_url: locationString,
+          items: items,
+          subtotal: subtotal,
+          shipping_cost: shippingCost,
+          discount: 0,
+          total: totalWithShipping,
+          payment_method: paymentMethod,
+          qris_info: qrisInfo,
+          timestamp: new Date().toISOString()
+        };
+
+        console.log('Sending order:', orderPayload);
+
+        const response = await fetch(gasWebhookUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(orderPayload),
+          mode: 'no-cors'
+        });
+
+        cartData = {};
+        updateCart();
+
+        loadingText.textContent = 'PESANAN DIKIRIM!';
+        loadingText.style.color = '#10B981';
+        spinner.style.display = 'none';
+        
+        const successContent = document.createElement('div');
+        successContent.style.cssText = `
+          font-size: 14px;
+          color: #666;
+          margin-top: 20px;
+          line-height: 1.6;
+        `;
+        
+        successContent.innerHTML = `
+          <p><strong>Order ID:</strong> ${orderId}</p>
+          <p>WhatsApp akan dikirim ke ${customerPhone}</p>
+          <p style="color: #10B981; font-weight: 600; margin-top: 12px;">Terima kasih!</p>
+        `;
+        
+        loadingContent.appendChild(successContent);
+
+        const closeBtn = document.createElement('button');
+        closeBtn.textContent = 'TUTUP';
+        closeBtn.style.cssText = `
+          margin-top: 20px;
+          padding: 12px 24px;
+          background: linear-gradient(135deg, #FF4500 0%, #DC143C 100%);
+          color: white;
+          border: none;
+          border-radius: 6px;
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: transform 0.2s;
+        `;
+        closeBtn.onmouseover = () => closeBtn.style.transform = 'translateY(-2px)';
+        closeBtn.onmouseout = () => closeBtn.style.transform = 'translateY(0)';
+        closeBtn.onclick = () => loadingModal.remove();
+        loadingContent.appendChild(closeBtn);
+
+      } catch (error) {
+        console.error('Error:', error);
+        
+        loadingText.textContent = 'GAGAL';
+        loadingText.style.color = '#c33';
+        spinner.style.display = 'none';
+        
+        const errorContent = document.createElement('div');
+        errorContent.style.cssText = `
+          font-size: 14px;
+          color: #666;
+          margin-top: 20px;
+          line-height: 1.6;
+        `;
+        errorContent.innerHTML = `
+          <p>Coba lagi atau hubungi toko.</p>
+        `;
+        loadingContent.appendChild(errorContent);
+
+        const closeBtn = document.createElement('button');
+        closeBtn.textContent = 'Tutup';
+        closeBtn.style.cssText = `
+          margin-top: 20px;
+          padding: 12px 24px;
+          background: #f0f0f0;
+          color: #666;
+          border: none;
+          border-radius: 6px;
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
+        `;
+        closeBtn.onclick = () => loadingModal.remove();
+        loadingContent.appendChild(closeBtn);
+      }
+    }
+
+    document.getElementById('checkout-btn').addEventListener('click', (e) => {
+      e.preventDefault();
+      if (Object.keys(cartData).length === 0) {
+        alert('Keranjang kosong!');
+        return;
+      }
+      document.getElementById('cart-section').classList.remove('open');
+      showPaymentModal();
+    });
+
+    document.getElementById('cart-close-btn').addEventListener('click', () => {
+      document.getElementById('cart-section').classList.remove('open');
+    });
+
+    function toggleCart() {
+      const cartSection = document.getElementById('cart-section');
+      if (Object.keys(cartData).length === 0) {
+        alert('Keranjang kosong!');
+        return;
+      }
+      cartSection.classList.toggle('open');
+    }
+
+    loadMenu();
+  </script>
+ </body>
+</html>

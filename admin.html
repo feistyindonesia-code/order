@@ -1,0 +1,1610 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Feisty Admin Dashboard</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Arimo', Arial, sans-serif; background: #f0f2f5; }
+    
+    /* Login Page */
+    #login-page {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #FF4500 0%, #DC143C 100%);
+    }
+    .login-box {
+      background: white;
+      padding: 40px;
+      border-radius: 16px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      width: 90%;
+      max-width: 400px;
+    }
+    .login-box h1 { color: #FF4500; margin-bottom: 20px; text-align: center; }
+    .login-box input {
+      width: 100%;
+      padding: 14px;
+      margin: 10px 0;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+    .login-box button {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #FF4500 0%, #DC143C 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    .login-error { color: red; text-align: center; margin-top: 10px; display: none; }
+    
+    /* Dashboard */
+    #dashboard { display: none; }
+    
+    /* Header */
+    .admin-header {
+      background: linear-gradient(135deg, #1F2937 0%, #374151 100%);
+      color: white;
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .admin-header h1 { font-size: 20px; }
+    .logout-btn {
+      background: rgba(255,255,255,0.2);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    
+    /* Stats Cards */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 16px;
+      padding: 20px;
+    }
+    .stat-card {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    .stat-card .number { font-size: 28px; font-weight: bold; color: #FF4500; }
+    .stat-card .label { color: #666; font-size: 14px; margin-top: 4px; }
+    .stat-card.pending .number { color: #f59e0b; }
+    .stat-card.processing .number { color: #3b82f6; }
+    .stat-card.shipping .number { color: #8b5cf6; }
+    .stat-card.completed .number { color: #10b981; }
+    
+    /* Tabs */
+    .tabs {
+      display: flex;
+      background: white;
+      padding: 0 20px;
+      border-bottom: 2px solid #e5e7eb;
+      overflow-x: auto;
+    }
+    .tab {
+      padding: 16px 24px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      color: #666;
+      border-bottom: 3px solid transparent;
+      white-space: nowrap;
+    }
+    .tab.active { color: #FF4500; border-bottom-color: #FF4500; }
+    
+    /* Content */
+    .content { padding: 20px; }
+    
+    /* Filter */
+    .filter-bar {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .filter-bar input, .filter-bar select {
+      padding: 10px 14px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+    .filter-bar button {
+      padding: 10px 20px;
+      background: #FF4500;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .btn-add { background: #10b981 !important; }
+    .btn-edit { background: #3b82f6 !important; }
+    .btn-delete { background: #ef4444 !important; }
+    .btn-refresh { background: #6b7280 !important; }
+    
+    /* Tables */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .data-table th, .data-table td {
+      padding: 14px 16px;
+      text-align: left;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .data-table th {
+      background: #f9fafb;
+      font-weight: 600;
+      color: #374151;
+      font-size: 13px;
+      text-transform: uppercase;
+    }
+    .data-table tr:hover { background: #f9fafb; }
+    .data-table td { font-size: 14px; }
+    
+    /* Status Badge */
+    .status-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .status-pending { background: #fef3c7; color: #d97706; }
+    .status-processing { background: #dbeafe; color: #2563eb; }
+    .status-shipping { background: #ede9fe; color: #7c3aed; }
+    .status-completed { background: #d1fae5; color: #059669; }
+    .status-cancelled { background: #fee2e2; color: #dc2626; }
+    .status-active { background: #d1fae5; color: #059669; }
+    .status-inactive { background: #fee2e2; color: #dc2626; }
+    
+    /* Actions */
+    .action-btn {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      margin: 2px;
+    }
+    .btn-view { background: #e0e7ff; color: #4f46e5; }
+    .btn-update { background: #d1fae5; color: #059669; }
+    .btn-wa { background: #dcfce7; color: #16a34a; }
+    .btn-sm { padding: 4px 8px; font-size: 11px; }
+    
+    /* Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal.open { display: flex; }
+    .modal-content {
+      background: white;
+      border-radius: 16px;
+      max-width: 600px;
+      width: 100%;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    .modal-header {
+      padding: 20px;
+      border-bottom: 1px solid #e5e7eb;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .modal-header h2 { font-size: 18px; }
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: #999;
+    }
+    .modal-body { padding: 20px; }
+    .modal-footer {
+      padding: 20px;
+      border-top: 1px solid #e5e7eb;
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+    }
+    
+    /* Forms */
+    .form-group { margin-bottom: 16px; }
+    .form-group label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: #374151;
+      font-size: 14px;
+    }
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+    .form-group textarea { resize: vertical; min-height: 80px; }
+    .form-row { display: flex; gap: 16px; }
+    .form-row .form-group { flex: 1; }
+    
+    /* Form Modal Specific */
+    #form-modal .modal-content { max-width: 500px; }
+    #form-modal .form-group { margin-bottom: 12px; }
+    #form-modal label { font-size: 13px; }
+    #form-modal input, #form-modal select { padding: 8px 12px; font-size: 13px; }
+    
+    /* Settings Form */
+    .settings-section {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .settings-section h3 {
+      color: #1F2937;
+      margin-bottom: 16px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #FF4500;
+    }
+    .settings-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+    }
+    .setting-item {
+      background: #f9fafb;
+      padding: 16px;
+      border-radius: 8px;
+    }
+    .setting-item label {
+      font-size: 12px;
+      color: #666;
+      display: block;
+      margin-bottom: 4px;
+    }
+    .setting-item input {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+    
+    /* Loading */
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #666;
+    }
+    .spinner {
+      width: 40px; height: 40px;
+      border: 4px solid #FF4500;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #999;
+    }
+    .empty-state svg {
+      width: 80px; height: 80px;
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+    
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #1F2937;
+      color: white;
+      padding: 14px 24px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      z-index: 2000;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.3s;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast.success { background: #10b981; }
+    .toast.error { background: #ef4444; }
+    
+    /* Tabs in Settings */
+    .settings-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    .settings-tab {
+      padding: 10px 20px;
+      background: #e5e7eb;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .settings-tab.active { background: #FF4500; color: white; }
+  </style>
+</head>
+<body>
+  <!-- Login Page -->
+  <div id="login-page">
+    <div class="login-box">
+      <h1>🔐 Admin Feisty</h1>
+      <input type="text" id="admin-username" placeholder="Username">
+      <input type="password" id="admin-password" placeholder="Password">
+      <button onclick="login()">Masuk</button>
+      <p class="login-error" id="login-error">Username atau password salah!</p>
+      <p style="text-align: center; margin-top: 20px; font-size: 12px; color: #999;">
+        Default: admin / feisty2024
+      </p>
+    </div>
+  </div>
+  
+  <!-- Dashboard -->
+  <div id="dashboard">
+    <header class="admin-header">
+      <h1>📊 Feisty Admin Dashboard</h1>
+      <button class="logout-btn" onclick="logout()">Keluar</button>
+    </header>
+    
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="number" id="stat-today">0</div>
+        <div class="label">Hari Ini</div>
+      </div>
+      <div class="stat-card pending">
+        <div class="number" id="stat-pending">0</div>
+        <div class="label">Pending</div>
+      </div>
+      <div class="stat-card processing">
+        <div class="number" id="stat-processing">0</div>
+        <div class="label">Diproses</div>
+      </div>
+      <div class="stat-card shipping">
+        <div class="number" id="stat-shipping">0</div>
+        <div class="label">Dikirim</div>
+      </div>
+      <div class="stat-card completed">
+        <div class="number" id="stat-completed">0</div>
+        <div class="label">Selesai</div>
+      </div>
+      <div class="stat-card">
+        <div class="number" id="stat-revenue">Rp0</div>
+        <div class="label">Pendapatan</div>
+      </div>
+    </div>
+    
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('orders')">📦 Pesanan</button>
+      <button class="tab" onclick="switchTab('menu')">🍔 Menu</button>
+      <button class="tab" onclick="switchTab('customers')">👥 Customer</button>
+      <button class="tab" onclick="switchTab('bot')">🤖 Bot WA</button>
+      <button class="tab" onclick="switchTab('settings')">⚙️ Pengaturan</button>
+    </div>
+    
+    <!-- Orders Tab -->
+    <div id="tab-orders" class="content">
+      <div class="filter-bar">
+        <input type="text" id="search-order" placeholder="Cari order ID, nama, WA..." onkeyup="filterOrders()">
+        <select id="filter-status" onchange="filterOrders()">
+          <option value="">Semua Status</option>
+          <option value="PENDING">Pending</option>
+          <option value="PROCESSING">Diproses</option>
+          <option value="SHIPPING">Dikirim</option>
+          <option value="COMPLETED">Selesai</option>
+          <option value="CANCELLED">Dibatalkan</option>
+        </select>
+        <input type="date" id="filter-date" onchange="filterOrders()">
+        <button onclick="loadOrders()">🔄 Refresh</button>
+        <button class="export-btn" onclick="exportOrders()">📊 Export</button>
+      </div>
+      <div id="orders-container">
+        <div class="loading"><div class="spinner"></div>Memuat pesanan...</div>
+      </div>
+    </div>
+    
+    <!-- Menu Tab -->
+    <div id="tab-menu" class="content" style="display:none;">
+      <div class="filter-bar">
+        <button class="btn-add" onclick="showMenuForm()">➕ Tambah Menu</button>
+        <button class="btn-refresh" onclick="loadMenu()">🔄 Refresh</button>
+      </div>
+      <div id="menu-container">
+        <div class="loading"><div class="spinner"></div>Memuat menu...</div>
+      </div>
+    </div>
+    
+    <!-- Customers Tab -->
+    <div id="tab-customers" class="content" style="display:none;">
+      <div class="filter-bar">
+        <input type="text" id="search-customer" placeholder="Cari nama atau WA..." onkeyup="renderCustomers()">
+        <button class="btn-add" onclick="showCustomerForm()">➕ Tambah Customer</button>
+        <button class="btn-refresh" onclick="loadCustomers()">🔄 Refresh</button>
+      </div>
+      <div id="customers-container">
+        <div class="loading"><div class="spinner"></div>Memuat customer...</div>
+      </div>
+    </div>
+    
+    <!-- Bot WA Tab -->
+    <div id="tab-bot" class="content" style="display:none;">
+      <div class="settings-tabs">
+        <button class="settings-tab active" onclick="switchBotTab('messages')">💬 Pesan Bot</button>
+        <button class="settings-tab" onclick="switchBotTab('knowledge')">🧠 Knowledge CS</button>
+        <button class="settings-tab" onclick="switchBotTab('config')">⚙️ Konfigurasi</button>
+      </div>
+      
+      <!-- Bot Messages -->
+      <div id="bot-messages" class="settings-section">
+        <h3>💬 Pengaturan Pesan Bot WhatsApp</h3>
+        <p style="color: #666; margin-bottom: 16px; font-size: 14px;">
+          Edit pesan-pesan yang dikirim oleh bot. Gunakan variabel <strong>{nama}</strong> untuk nama customer dan <strong>{phone}</strong> untuk nomor WA.
+        </p>
+        <div id="bot-messages-container">
+          <div class="loading"><div class="spinner"></div>Memuat pesan bot...</div>
+        </div>
+      </div>
+      
+      <!-- Bot Knowledge -->
+      <div id="bot-knowledge" class="settings-section" style="display:none;">
+        <h3>🧠 Knowledge Base CS</h3>
+        <p style="color: #666; margin-bottom: 16px; font-size: 14px;">
+          Tambah pengetahuan untuk AI CS agar menjawab pertanyaan customer dengan tepat.
+        </p>
+        <div class="filter-bar">
+          <button class="btn-add" onclick="showKnowledgeForm()">➕ Tambah Pengetahuan</button>
+          <button class="btn-refresh" onclick="loadKnowledge()">🔄 Refresh</button>
+        </div>
+        <div id="knowledge-container">
+          <div class="loading"><div class="spinner"></div>Memuat knowledge base...</div>
+        </div>
+      </div>
+      
+      <!-- Bot Config -->
+      <div id="bot-config" class="settings-section" style="display:none;">
+        <h3>⚙️ Konfigurasi Bot</h3>
+        <div class="settings-grid">
+          <div class="setting-item">
+            <label>Timeout Bot (Menit)</label>
+            <input type="number" id="bot-timeout" value="15" onchange="updateBotSetting('timeout', this.value)">
+          </div>
+          <div class="setting-item">
+            <label>Model Gemini</label>
+            <select id="bot-gemini-model" onchange="updateBotSetting('gemini_model', this.value)">
+              <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+              <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+              <option value="gemini-pro">Gemini Pro</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Settings Tab -->
+    <div id="tab-settings" class="content" style="display:none;">
+      <div class="settings-tabs">
+        <button class="settings-tab active" onclick="switchSettingsTab('ongkir')">🚚 Ongkir</button>
+        <button class="settings-tab" onclick="switchSettingsTab('toko')">🏪 Toko</button>
+        <button class="settings-tab" onclick="switchSettingsTab('payment')">💳 Payment</button>
+      </div>
+      
+      <!-- Ongkir Settings -->
+      <div id="settings-ongkir" class="settings-section">
+        <h3>🚚 Pengaturan Ongkir</h3>
+        <div class="settings-grid">
+          <div class="setting-item">
+            <label>Biaya Ongkir Dasar (Rp)</label>
+            <input type="number" id="setting-base_shipping_cost" value="10000" onchange="updateSetting('base_shipping_cost', this.value)">
+          </div>
+          <div class="setting-item">
+            <label>Per KM (Rp)</label>
+            <input type="number" id="setting-shipping_cost_per_km" value="2000" onchange="updateSetting('shipping_cost_per_km', this.value)">
+          </div>
+          <div class="setting-item">
+            <label>Min Jarak Gratis (KM)</label>
+            <input type="number" id="setting-free_shipping_min_distance" value="5" onchange="updateSetting('free_shipping_min_distance', this.value)">
+          </div>
+        </div>
+      </div>
+      
+      <!-- Toko Settings -->
+      <div id="settings-toko" class="settings-section" style="display:none;">
+        <h3>🏪 Informasi Toko</h3>
+        <div class="form-group">
+          <label>Nama Toko</label>
+          <input type="text" id="setting-nama_toko" placeholder="Feisty Kitchen">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Latitude</label>
+            <input type="text" id="setting-latitude" placeholder="-6.2088">
+          </div>
+          <div class="form-group">
+            <label>Longitude</label>
+            <input type="text" id="setting-longitude" placeholder="106.8456">
+          </div>
+        </div>
+        <button onclick="updateLocationSettings()" class="btn-add" style="margin-top: 10px;">💾 Simpan</button>
+      </div>
+      
+      <!-- Payment Settings -->
+      <div id="settings-payment" class="settings-section" style="display:none;">
+        <h3>💳 Pengaturan Payment</h3>
+        <div class="setting-item">
+          <label>Biaya Admin QRIS (Rp)</label>
+          <input type="number" id="setting-qris_fee" value="1000" onchange="updateSetting('qris_fee', this.value)">
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Order Detail Modal -->
+  <div class="modal" id="order-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modal-title">Detail Pesanan</h2>
+        <button class="modal-close" onclick="closeModal()">×</button>
+      </div>
+      <div class="modal-body" id="modal-body">
+        <!-- Order details here -->
+      </div>
+      <div class="modal-footer">
+        <button class="action-btn" onclick="closeModal()">Tutup</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Form Modal (Menu/Customer) -->
+  <div class="modal" id="form-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="form-modal-title">Form</h2>
+        <button class="modal-close" onclick="closeFormModal()">×</button>
+      </div>
+      <div class="modal-body" id="form-modal-body">
+        <!-- Form content here -->
+      </div>
+      <div class="modal-footer">
+        <button class="action-btn" onclick="closeFormModal()">Batal</button>
+        <button class="action-btn btn-add" id="form-submit-btn" onclick="submitForm()">Simpan</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+  
+  <script>
+    // Config
+    const ADMIN_USERNAME = 'admin';
+    const ADMIN_PASSWORD = 'feisty2024';
+    let GAS_URL = 'https://script.google.com/macros/s/AKfycbxvnehCIuEhnxAqSBdUqWS-9pJSCuGzdswSc4HntftjRCdoWccTKDdH20GqElNVXhR6/exec';
+    
+    let allOrders = [];
+    let allMenu = [];
+    let allCustomers = [];
+    let allBotMessages = [];
+    let allKnowledge = [];
+    let currentOrder = null;
+    let currentFormType = '';
+    let currentEditRow = null;
+    
+    // Login
+    function login() {
+      const user = document.getElementById('admin-username').value;
+      const pass = document.getElementById('admin-password').value;
+      
+      if (user === ADMIN_USERNAME && pass === ADMIN_PASSWORD) {
+        localStorage.setItem('feisty_admin', 'true');
+        document.getElementById('login-page').style.display = 'none';
+        document.getElementById('dashboard').style.display = 'block';
+        loadOrders();
+        loadStats();
+      } else {
+        document.getElementById('login-error').style.display = 'block';
+      }
+    }
+    
+    function logout() {
+      localStorage.removeItem('feisty_admin');
+      location.reload();
+    }
+    
+    // Check login
+    if (localStorage.getItem('feisty_admin') === 'true') {
+      document.getElementById('login-page').style.display = 'none';
+      document.getElementById('dashboard').style.display = 'block';
+      loadOrders();
+      loadStats();
+    }
+    
+    // Tabs
+    function switchTab(tab) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      event.target.classList.add('active');
+      
+      document.querySelectorAll('.content').forEach(c => c.style.display = 'none');
+      document.getElementById('tab-' + tab).style.display = 'block';
+      
+      if (tab === 'orders') loadOrders();
+      if (tab === 'menu') loadMenu();
+      if (tab === 'customers') loadCustomers();
+      if (tab === 'settings') loadSettings();
+    }
+    
+    // Settings Tabs
+    function switchSettingsTab(tab) {
+      document.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('active'));
+      event.target.classList.add('active');
+      
+      document.querySelectorAll('[id^="settings-"]').forEach(s => s.style.display = 'none');
+      document.getElementById('settings-' + tab).style.display = 'block';
+    }
+    
+    // Bot Tabs
+    function switchBotTab(tab) {
+      document.querySelectorAll('#tab-bot .settings-tab').forEach(t => t.classList.remove('active'));
+      event.target.classList.add('active');
+      
+      document.querySelectorAll('[id^="bot-"]').forEach(s => {
+        if (s.id !== 'bot-messages' && s.id !== 'bot-knowledge' && s.id !== 'bot-config') return;
+        s.style.display = 'none';
+      });
+      
+      document.getElementById('bot-' + tab).style.display = 'block';
+      
+      if (tab === 'messages') loadBotMessages();
+      if (tab === 'knowledge') loadKnowledge();
+    }
+    
+    // ========== ORDERS ==========
+    async function loadOrders() {
+      const container = document.getElementById('orders-container');
+      container.innerHTML = '<div class="loading"><div class="spinner"></div>Memuat pesanan...</div>';
+      
+      try {
+        const response = await fetch(GAS_URL + '?action=getOrders');
+        const orders = await response.json();
+        allOrders = orders;
+        renderOrders(orders);
+        updateStats(orders);
+      } catch (error) {
+        container.innerHTML = '<div class="error-msg">Gagal memuat pesanan. Cek GAS URL.</div>';
+      }
+    }
+    
+    function renderOrders(orders) {
+      const container = document.getElementById('orders-container');
+      
+      if (orders.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 6h-2v11h2V6zm-4 0h-2v9h2V6zM4 6h12v2H4V6zm0 4h8v2H8v-2zm0 4h8v2H8v-2zm4-8h4v2h-4v-2zm0 4h4v2h-4v-2z"/></svg>
+            <p>Belum ada pesanan</p>
+          </div>
+        `;
+        return;
+      }
+      
+      const search = document.getElementById('search-order').value.toLowerCase();
+      const status = document.getElementById('filter-status').value;
+      const date = document.getElementById('filter-date').value;
+      
+      let filtered = orders.filter(o => {
+        const matchSearch = !search || 
+          (o.order_id && o.order_id.toLowerCase().includes(search)) ||
+          (o.nama && o.nama.toLowerCase().includes(search)) ||
+          (o.phone && o.phone.includes(search));
+        const matchStatus = !status || o.status === status;
+        const orderDate = new Date(o.timestamp).toISOString().split('T')[0];
+        const matchDate = !date || orderDate === date;
+        return matchSearch && matchStatus && matchDate;
+      });
+      
+      filtered.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+      
+      let html = '<table class="data-table"><thead><tr>';
+      html += '<th>Order ID</th><th>Waktu</th><th>Customer</th><th>Total</th><th>Status</th><th>Aksi</th>';
+      html += '</tr></thead><tbody>';
+      
+      filtered.forEach(order => {
+        const time = new Date(order.timestamp).toLocaleString('id-ID');
+        const statusClass = 'status-' + (order.status || 'pending').toLowerCase();
+        
+        html += '<tr>';
+        html += `<td><strong>${order.order_id || '-'}</strong></td>`;
+        html += `<td>${time}</td>`;
+        html += `<td>${order.nama || '-'}<br><small>${order.phone || ''}</small></td>`;
+        html += `<td><strong>Rp ${formatPrice(order.total || 0)}</strong></td>`;
+        html += `<td><span class="status-badge ${statusClass}">${order.status || 'PENDING'}</span></td>`;
+        html += `<td>
+          <button class="action-btn btn-view" onclick="viewOrder('${order.order_id}')">Lihat</button>
+          <button class="action-btn btn-update" onclick="showStatusUpdate('${order.order_id}')">Ubah</button>
+        </td>`;
+        html += '</tr>';
+      });
+      
+      html += '</tbody></table>';
+      container.innerHTML = html;
+    }
+    
+    function filterOrders() {
+      renderOrders(allOrders);
+    }
+    
+    function updateStats(orders) {
+      const today = new Date().toISOString().split('T')[0];
+      const todayOrders = orders.filter(o => new Date(o.timestamp).toISOString().split('T')[0] === today);
+      const pending = orders.filter(o => o.status === 'PENDING').length;
+      const processing = orders.filter(o => o.status === 'PROCESSING').length;
+      const shipping = orders.filter(o => o.status === 'SHIPPING').length;
+      const completed = orders.filter(o => o.status === 'COMPLETED').length;
+      const revenue = orders.filter(o => o.status === 'COMPLETED').reduce((sum, o) => sum + (o.total || 0), 0);
+      
+      document.getElementById('stat-today').textContent = todayOrders.length;
+      document.getElementById('stat-pending').textContent = pending;
+      document.getElementById('stat-processing').textContent = processing;
+      document.getElementById('stat-shipping').textContent = shipping;
+      document.getElementById('stat-completed').textContent = completed;
+      document.getElementById('stat-revenue').textContent = 'Rp ' + formatPrice(revenue);
+    }
+    
+    function loadStats() {
+      loadOrders();
+    }
+    
+    // View Order
+    function viewOrder(orderId) {
+      const order = allOrders.find(o => o.order_id === orderId);
+      if (!order) return;
+      
+      currentOrder = order;
+      document.getElementById('modal-title').textContent = 'Order: ' + orderId;
+      
+      const items = JSON.parse(order.items || '[]');
+      let itemsHtml = '<div class="items-list">';
+      items.forEach(item => {
+        itemsHtml += `
+          <div class="item-row">
+            <span>${item.name} x${item.qty}</span>
+            <span>Rp ${formatPrice(item.price * item.qty)}</span>
+          </div>
+        `;
+      });
+      itemsHtml += '</div>';
+      
+      document.getElementById('modal-body').innerHTML = `
+        <div class="order-detail-section">
+          <h3>📋 Info Pesanan</h3>
+          <div class="order-detail-row"><span>Order ID</span><span>${order.order_id}</span></div>
+          <div class="order-detail-row"><span>Waktu</span><span>${new Date(order.timestamp).toLocaleString('id-ID')}</span></div>
+          <div class="order-detail-row"><span>Status</span><span class="status-badge status-${(order.status || 'pending').toLowerCase()}">${order.status || 'PENDING'}</span></div>
+          <div class="order-detail-row"><span>Metode</span><span>${order.payment_method || '-'}</span></div>
+        </div>
+        
+        <div class="order-detail-section">
+          <h3>👤 Customer</h3>
+          <div class="order-detail-row"><span>Nama</span><span>${order.nama || '-'}</span></div>
+          <div class="order-detail-row"><span>WhatsApp</span><span>${order.phone || '-'}</span></div>
+          <div class="order-detail-row"><span>Alamat</span><span>${order.alamat || '-'}</span></div>
+        </div>
+        
+        <div class="order-detail-section">
+          <h3>📦 Items</h3>
+          ${itemsHtml}
+        </div>
+        
+        <div class="order-detail-section">
+          <h3>💰 Rincian</h3>
+          <div class="order-detail-row"><span>Subtotal</span><span>Rp ${formatPrice(order.subtotal || 0)}</span></div>
+          <div class="order-detail-row"><span>Ongkir</span><span>Rp ${formatPrice(order.shipping_cost || 0)}</span></div>
+          ${order.discount > 0 ? `<div class="order-detail-row"><span>Diskon</span><span>- Rp ${formatPrice(order.discount)}</span></div>` : ''}
+          <div class="order-detail-row" style="font-weight:bold; font-size:16px; color:#FF4500;"><span>Total</span><span>Rp ${formatPrice(order.total || 0)}</span></div>
+        </div>
+        
+        ${order.location_url ? `<p style="text-align:center; margin-top:12px;"><a href="${order.location_url}" target="_blank">📍 Lihat Lokasi Pengiriman</a></p>` : ''}
+        
+        <div class="status-options">
+          <button class="status-btn ${order.status === 'PENDING' ? 'active' : ''}" onclick="updateOrderStatus('${orderId}', 'PENDING')">Pending</button>
+          <button class="status-btn ${order.status === 'PROCESSING' ? 'active' : ''}" onclick="updateOrderStatus('${orderId}', 'PROCESSING')">Diproses</button>
+          <button class="status-btn ${order.status === 'SHIPPING' ? 'active' : ''}" onclick="updateOrderStatus('${orderId}', 'SHIPPING')">Dikirim</button>
+          <button class="status-btn ${order.status === 'COMPLETED' ? 'active' : ''}" onclick="updateOrderStatus('${orderId}', 'COMPLETED')">Selesai</button>
+          <button class="status-btn ${order.status === 'CANCELLED' ? 'active' : ''}" onclick="updateOrderStatus('${orderId}', 'CANCELLED')">Batal</button>
+        </div>
+      `;
+      
+      document.getElementById('order-modal').classList.add('open');
+    }
+    
+    function showStatusUpdate(orderId) {
+      viewOrder(orderId);
+    }
+    
+    async function updateOrderStatus(orderId, newStatus) {
+      try {
+        const params = new URLSearchParams();
+        params.append('action', 'updateStatus');
+        params.append('order_id', orderId);
+        params.append('status', newStatus);
+        
+        await fetch(GAS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: params.toString(),
+          mode: 'no-cors'
+        });
+        
+        showToast('Status dikirim!', 'success');
+        loadOrders();
+        closeModal();
+      } catch (error) {
+        showToast('Error: ' + error.message, 'error');
+      }
+    }
+    
+    function closeModal() {
+      document.getElementById('order-modal').classList.remove('open');
+    }
+    
+    // ========== MENU ==========
+    async function loadMenu() {
+      const container = document.getElementById('menu-container');
+      container.innerHTML = '<div class="loading"><div class="spinner"></div>Memuat menu...</div>';
+      
+      try {
+        const response = await fetch(GAS_URL + '?action=getMenu');
+        const menu = await response.json();
+        allMenu = menu;
+        
+        if (!Array.isArray(menu) || menu.length === 0) {
+          container.innerHTML = '<div class="empty-state"><p>Menu kosong</p></div>';
+          return;
+        }
+        
+        renderMenu(menu);
+      } catch (error) {
+        container.innerHTML = '<div class="error-msg">Gagal memuat menu</div>';
+      }
+    }
+    
+    function renderMenu(menu) {
+      const container = document.getElementById('menu-container');
+      
+      let html = '<table class="data-table"><thead><tr>';
+      html += '<th>No</th><th>Nama</th><th>Kategori</th><th>Harga</th><th>Diskon</th><th>Status</th><th>Aksi</th>';
+      html += '</tr></thead><tbody>';
+      
+      menu.forEach((item, index) => {
+        const hasDiscount = item.has_discount;
+        const statusClass = item.aktif ? 'status-active' : 'status-inactive';
+        const statusText = item.aktif ? 'Aktif' : 'Nonaktif';
+        
+        html += '<tr>';
+        html += `<td>${index + 1}</td>`;
+        html += `<td><strong>${item.nama}</strong><br><small>${item.deskripsi || ''}</small></td>`;
+        html += `<td>${item.kategori || '-'}</td>`;
+        html += `<td>
+          ${hasDiscount ? `<span style="text-decoration:line-through;color:#999;font-size:12px;">Rp ${formatPrice(item.harga_asli)}</span><br>` : ''}
+          <strong>Rp ${formatPrice(item.harga)}</strong>
+        </td>`;
+        html += `<td>${item.diskon_persen > 0 ? item.diskon_persen + '%' : '-'}</td>`;
+        html += `<td><span class="status-badge ${statusClass}">${statusText}</span></td>`;
+        html += `<td>
+          <button class="action-btn btn-edit btn-sm" onclick="editMenuItem(${index})">Edit</button>
+          <button class="action-btn btn-delete btn-sm" onclick="deleteMenuItem(${index})">Hapus</button>
+        </td>`;
+        html += '</tr>';
+      });
+      
+      html += '</tbody></table>';
+      container.innerHTML = html;
+    }
+    
+    function showMenuForm(rowIndex = null) {
+      currentFormType = 'menu';
+      currentEditRow = rowIndex;
+      
+      const item = rowIndex !== null ? allMenu[rowIndex] : null;
+      const title = item ? 'Edit Menu' : 'Tambah Menu';
+      
+      document.getElementById('form-modal-title').textContent = title;
+      document.getElementById('form-modal-body').innerHTML = `
+        <div class="form-group">
+          <label>Nama Menu *</label>
+          <input type="text" id="menu-nama" value="${item ? item.nama : ''}" placeholder="Nama menu">
+        </div>
+        <div class="form-group">
+          <label>Deskripsi</label>
+          <textarea id="menu-deskripsi" placeholder="Deskripsi menu">${item ? item.deskripsi : ''}</textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Harga Jual (Rp) *</label>
+            <input type="number" id="menu-harga" value="${item ? item.harga : 0}" placeholder="25000">
+          </div>
+          <div class="form-group">
+            <label>Harga Asli (Rp)</label>
+            <input type="number" id="menu-harga_asli" value="${item ? item.harga_asli : 0}" placeholder="30000">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Diskon (%)</label>
+            <input type="number" id="menu-diskon_persen" value="${item ? item.diskon_persen : 0}" placeholder="0" max="100">
+          </div>
+          <div class="form-group">
+            <label>Kategori</label>
+            <select id="menu-kategori">
+              <option value="Makanan" ${item && item.kategori === 'Makanan' ? 'selected' : ''}>Makanan</option>
+              <option value="Minuman" ${item && item.kategori === 'Minuman' ? 'selected' : ''}>Minuman</option>
+              <option value="Lainnya" ${item && item.kategori === 'Lainnya' ? 'selected' : ''}>Lainnya</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>URL Gambar</label>
+          <input type="text" id="menu-gambar" value="${item ? item.gambar : ''}" placeholder="https://...">
+        </div>
+        <div class="form-group">
+          <label>
+            <input type="checkbox" id="menu-aktif" ${item ? (item.aktif ? 'checked' : '') : 'checked'}>
+            Aktif
+          </label>
+        </div>
+      `;
+      
+      document.getElementById('form-modal').classList.add('open');
+    }
+    
+    function editMenuItem(index) {
+      showMenuForm(index);
+    }
+    
+    async function deleteMenuItem(index) {
+      if (!confirm('Yakin hapus menu "' + allMenu[index].nama + '"?')) return;
+      
+      try {
+        const params = new URLSearchParams();
+        params.append('action', 'deleteMenu');
+        params.append('row', index);
+        
+        await fetch(GAS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: params.toString(),
+          mode: 'no-cors'
+        });
+        
+        showToast('Menu dihapus!', 'success');
+        loadMenu();
+      } catch (error) {
+        showToast('Error: ' + error.message, 'error');
+      }
+    }
+    
+    // ========== CUSTOMERS ==========
+    async function loadCustomers() {
+      const container = document.getElementById('customers-container');
+      container.innerHTML = '<div class="loading"><div class="spinner"></div>Memuat customer...</div>';
+      
+      try {
+        const response = await fetch(GAS_URL + '?action=getCustomers');
+        const customers = await response.json();
+        allCustomers = customers;
+        
+        renderCustomers(customers);
+      } catch (error) {
+        container.innerHTML = '<div class="error-msg">Gagal memuat customer</div>';
+      }
+    }
+    
+    function renderCustomers(customers = allCustomers) {
+      const container = document.getElementById('customers-container');
+      
+      if (!Array.isArray(customers) || customers.length === 0) {
+        container.innerHTML = '<div class="empty-state"><p>Belum ada customer</p></div>';
+        return;
+      }
+      
+      const search = document.getElementById('search-customer').value.toLowerCase();
+      let filtered = customers;
+      if (search) {
+        filtered = customers.filter(c => 
+          (c.nama && c.nama.toLowerCase().includes(search)) ||
+          (c.phone && c.phone.includes(search))
+        );
+      }
+      
+      let html = '<table class="data-table"><thead><tr>';
+      html += '<th>No</th><th>WhatsApp</th><th>Nama</th><th>Alamat</th><th>Diskon</th><th>Aksi</th>';
+      html += '</tr></thead><tbody>';
+      
+      filtered.forEach((c, index) => {
+        const diskonText = c.tipe_diskon && c.nilai_diskon ? 
+          (c.tipe_diskon === 'persen' ? c.nilai_diskon + '%' : 'Rp ' + formatPrice(c.nilai_diskon)) : '-';
+        
+        html += '<tr>';
+        html += `<td>${index + 1}</td>`;
+        html += `<td>${c.phone || '-'}</td>`;
+        html += `<td>${c.nama || '-'}</td>`;
+        html += `<td>${c.alamat || '-'}</td>`;
+        html += `<td>${diskonText}</td>`;
+        html += `<td>
+          <button class="action-btn btn-edit btn-sm" onclick="editCustomer('${c.phone}')">Edit</button>
+          <button class="action-btn btn-delete btn-sm" onclick="deleteCustomer('${c.phone}')">Hapus</button>
+        </td>`;
+        html += '</tr>';
+      });
+      
+      html += '</tbody></table>';
+      container.innerHTML = html;
+    }
+    
+    function showCustomerForm(phone = null) {
+      currentFormType = 'customer';
+      currentEditRow = phone;
+      
+      let item = null;
+      if (phone) {
+        item = allCustomers.find(c => c.phone === phone);
+      }
+      
+      const title = item ? 'Edit Customer' : 'Tambah Customer';
+      
+      document.getElementById('form-modal-title').textContent = title;
+      document.getElementById('form-modal-body').innerHTML = `
+        <div class="form-group">
+          <label>WhatsApp *</label>
+          <input type="text" id="cust-phone" value="${item ? item.phone : ''}" placeholder="6281234567890" ${item ? 'readonly' : ''}>
+        </div>
+        <div class="form-group">
+          <label>Nama</label>
+          <input type="text" id="cust-nama" value="${item ? item.nama : ''}" placeholder="Nama customer">
+        </div>
+        <div class="form-group">
+          <label>Alamat</label>
+          <textarea id="cust-alamat" placeholder="Alamat lengkap">${item ? item.alamat : ''}</textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Tipe Diskon</label>
+            <select id="cust-tipe_diskon">
+              <option value="" ${!item || !item.tipe_diskon ? 'selected' : ''}>Tidak Ada</option>
+              <option value="persen" ${item && item.tipe_diskon === 'persen' ? 'selected' : ''}>Persen (%)</option>
+              <option value="fix" ${item && item.tipe_diskon === 'fix' ? 'selected' : ''}>Fix (Rp)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Nilai Diskon</label>
+            <input type="number" id="cust-nilai_diskon" value="${item ? item.nilai_diskon : 0}" placeholder="0">
+          </div>
+        </div>
+      `;
+      
+      document.getElementById('form-modal').classList.add('open');
+    }
+    
+    function editCustomer(phone) {
+      showCustomerForm(phone);
+    }
+    
+    async function deleteCustomer(phone) {
+      if (!confirm('Yakin hapus customer ini?')) return;
+      
+      try {
+        const params = new URLSearchParams();
+        params.append('action', 'deleteCustomer');
+        params.append('phone', phone);
+        
+        await fetch(GAS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: params.toString(),
+          mode: 'no-cors'
+        });
+        
+        showToast('Customer dihapus!', 'success');
+        loadCustomers();
+      } catch (error) {
+        showToast('Error: ' + error.message, 'error');
+      }
+    }
+    
+    // ========== SETTINGS ==========
+    async function loadSettings() {
+      try {
+        // Load Ongkir settings
+        const response = await fetch(GAS_URL + '?action=getConfig');
+        const config = await response.json();
+        
+        document.getElementById('setting-base_shipping_cost').value = config.base_shipping_cost || 10000;
+        document.getElementById('setting-shipping_cost_per_km').value = config.shipping_cost_per_km || 2000;
+        document.getElementById('setting-free_shipping_min_distance').value = config.free_shipping_min_distance || 5;
+        
+        document.getElementById('setting-nama_toko').value = config.nama_toko || 'Feisty Kitchen';
+        document.getElementById('setting-latitude').value = config.latitude || '';
+        document.getElementById('setting-longitude').value = config.longitude || '';
+        
+      } catch (error) {
+        console.error('Error loading settings:', error);
+      }
+    }
+    
+    async function updateSetting(key, value) {
+      try {
+        const params = new URLSearchParams();
+        params.append('action', 'updateSetting');
+        params.append('key', key);
+        params.append('value', value);
+        
+        await fetch(GAS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: params.toString(),
+          mode: 'no-cors'
+        });
+        
+        showToast('Pengaturan disimpan!', 'success');
+      } catch (error) {
+        showToast('Error: ' + error.message, 'error');
+      }
+    }
+    
+    async function updateLocationSettings() {
+      const nama_toko = document.getElementById('setting-nama_toko').value;
+      const latitude = parseFloat(document.getElementById('setting-latitude').value);
+      const longitude = parseFloat(document.getElementById('setting-longitude').value);
+      
+      try {
+        const params = new URLSearchParams();
+        params.append('action', 'updateLocation');
+        params.append('nama_toko', nama_toko);
+        params.append('latitude', latitude);
+        params.append('longitude', longitude);
+        
+        await fetch(GAS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: params.toString(),
+          mode: 'no-cors'
+        });
+        
+        showToast('Lokasi toko diperbarui!', 'success');
+      } catch (error) {
+        showToast('Error: ' + error.message, 'error');
+      }
+    }
+    
+    // ========== BOT MESSAGES ==========
+    async function loadBotMessages() {
+      const container = document.getElementById('bot-messages-container');
+      container.innerHTML = '<div class="loading"><div class="spinner"></div>Memuat pesan bot...</div>';
+      
+      try {
+        const response = await fetch(GAS_URL + '?action=getBotMessages');
+        const messages = await response.json();
+        allBotMessages = messages;
+        
+        if (!Array.isArray(messages) || messages.length === 0) {
+          container.innerHTML = '<div class="empty-state"><p>Belum ada pesan bot</p></div>';
+          return;
+        }
+        
+        renderBotMessages(messages);
+      } catch (error) {
+        container.innerHTML = '<div class="error-msg">Gagal memuat pesan bot</div>';
+      }
+    }
+    
+    function renderBotMessages(messages) {
+      const container = document.getElementById('bot-messages-container');
+      
+      let html = '<table class="data-table"><thead><tr>';
+      html += '<th>Pesan</th><th>Preview</th><th>Aksi</th>';
+      html += '</tr></thead><tbody>';
+      
+      messages.forEach((msg, index) => {
+        const preview = msg.message.length > 50 ? msg.message.substring(0, 50) + '...' : msg.message;
+        
+        html += '<tr>';
+        html += `<td><strong>${msg.description || msg.key}</strong><br><small style="color:#666">${msg.key}</small></td>`;
+        html += `<td style="font-size:13px;">${preview.replace(/\n/g, '<br>')}</td>`;
+        html += `<td>
+          <button class="action-btn btn-edit btn-sm" onclick="editBotMessage('${msg.key}')">Edit</button>
+        </td>`;
+        html += '</tr>';
+      });
+      
+      html += '</tbody></table>';
+      container.innerHTML = html;
+    }
+    
+    function editBotMessage(key) {
+      const msg = allBotMessages.find(m => m.key === key);
+      if (!msg) return;
+      
+      document.getElementById('form-modal-title').textContent = 'Edit: ' + (msg.description || key);
+      document.getElementById('form-modal-body').innerHTML = `
+        <div class="form-group">
+          <label>Key</label>
+          <input type="text" value="${msg.key}" readonly style="background:#f0f0f0;">
+        </div>
+        <div class="form-group">
+          <label>Pesan (bisa gunakan {nama} untuk nama customer)</label>
+          <textarea id="bot-message-text" rows="8" style="font-size:13px;">${msg.message}</textarea>
+        </div>
+        <div class="form-group">
+          <label style="color:#666;font-size:12px;">Preview:</label>
+          <div id="bot-message-preview" style="background:#f9fafb;padding:12px;border-radius:8px;font-size:13px;white-space:pre-wrap;">${msg.message}</div>
+        </div>
+      `;
+      
+      // Add preview on typing
+      document.getElementById('bot-message-text').addEventListener('input', function() {
+        document.getElementById('bot-message-preview').textContent = this.value;
+      });
+      
+      currentFormType = 'botMessage';
+      currentEditRow = key;
+      
+      document.getElementById('form-submit-btn').textContent = 'Simpan';
+      document.getElementById('form-modal').classList.add('open');
+    }
+    
+    async function saveBotMessage() {
+      const message = document.getElementById('bot-message-text').value;
+      const key = currentEditRow;
+      
+      if (!message) {
+        showToast('Pesan wajib diisi!', 'error');
+        return;
+      }
+      
+      try {
+        const params = new URLSearchParams();
+        params.append('action', 'updateBotMessage');
+        params.append('key', key);
+        params.append('message', message);
+        
+        await fetch(GAS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: params.toString(),
+          mode: 'no-cors'
+        });
+        
+        showToast('Pesan bot diperbarui!', 'success');
+        closeFormModal();
+        loadBotMessages();
+      } catch (error) {
+        showToast('Error: ' + error.message, 'error');
+      }
+    }
+    
+    // ========== BOT KNOWLEDGE ==========
+    async function loadKnowledge() {
+      const container = document.getElementById('knowledge-container');
+      container.innerHTML = '<div class="loading"><div class="spinner"></div>Memuat knowledge base...</div>';
+      
+      try {
+        const response = await fetch(GAS_URL + '?action=getCSKnowledge');
+        const knowledge = await response.json();
+        allKnowledge = knowledge;
+        
+        if (!Array.isArray(knowledge) || knowledge.length === 0) {
+          container.innerHTML = '<div class="empty-state"><p>Belum ada knowledge base</p></div>';
+          return;
+        }
+        
+        renderKnowledge(knowledge);
+      } catch (error) {
+        container.innerHTML = '<div class="error-msg">Gagal memuat knowledge base</div>';
+      }
+    }
+    
+    function renderKnowledge(knowledge) {
+      const container = document.getElementById('knowledge-container');
+      
+      let html = '<table class="data-table"><thead><tr>';
+      html += '<th>Kategori</th><th>Keywords</th><th>Jawaban</th><th>Aksi</th>';
+      html += '</tr></thead><tbody>';
+      
+      knowledge.forEach((k, index) => {
+        html += '<tr>';
+        html += `<td><strong>${k.kategori}</strong></td>`;
+        html += `<td><small>${k.keywords}</small></td>`;
+        html += `<td>${k.jawaban.substring(0, 80)}...</td>`;
+        html += `<td>
+          <button class="action-btn btn-delete btn-sm" onclick="deleteKnowledge(${index})">Hapus</button>
+        </td>`;
+        html += '</tr>';
+      });
+      
+      html += '</tbody></table>';
+      container.innerHTML = html;
+    }
+    
+    function showKnowledgeForm() {
+      currentFormType = 'knowledge';
+      
+      document.getElementById('form-modal-title').textContent = 'Tambah Knowledge';
+      document.getElementById('form-modal-body').innerHTML = `
+        <div class="form-group">
+          <label>Kategori</label>
+          <input type="text" id="knowledge-kategori" placeholder="Contoh: Menu, Harga, Pengiriman">
+        </div>
+        <div class="form-group">
+          <label>Keywords</label>
+          <input type="text" id="knowledge-keywords" placeholder="menu,makanan,harga (pisahkan dengan koma)">
+        </div>
+        <div class="form-group">
+          <label>Jawaban</label>
+          <textarea id="knowledge-jawaban" rows="4" placeholder="Jawaban yang akan diberikan oleh CS bot"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Contoh Pertanyaan</label>
+          <input type="text" id="knowledge-contoh" placeholder="ada menu apa?">
+        </div>
+      `;
+      
+      document.getElementById('form-submit-btn').textContent = 'Simpan';
+      document.getElementById('form-modal').classList.add('open');
+    }
+    
+    async function deleteKnowledge(index) {
+      if (!confirm('Yakin hapus knowledge ini?')) return;
+      
+      try {
+        const params = new URLSearchParams();
+        params.append('action', 'deleteCSKnowledge');
+        params.append('row', index);
+        
+        await fetch(GAS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: params.toString(),
+          mode: 'no-cors'
+        });
+        
+        showToast('Knowledge dihapus!', 'success');
+        loadKnowledge();
+      } catch (error) {
+        showToast('Error: ' + error.message, 'error');
+      }
+    }
+    
+    function updateBotSetting(key, value) {
+      showToast('Pengaturan disimpan!', 'success');
+      // Here you would save to GAS/PropertiesService
+    }
+    
+    // ========== FORM SUBMIT ==========
+    async function submitForm() {
+      if (currentFormType === 'menu') {
+        await submitMenuForm();
+      } else if (currentFormType === 'customer') {
+        await submitCustomerForm();
+      } else if (currentFormType === 'botMessage') {
+        await saveBotMessage();
+      } else if (currentFormType === 'knowledge') {
+        await submitKnowledgeForm();
+      }
+    }
+    
+    async function submitMenuForm() {
+      const data = {
+        nama: document.getElementById('menu-nama').value,
+        deskripsi: document.getElementById('menu-deskripsi').value,
+        harga: parseInt(document.getElementById('menu-harga').value) || 0,
+        harga_asli: parseInt(document.getElementById('menu-harga_asli').value) || 0,
+        diskon_persen: parseInt(document.getElementById('menu-diskon_persen').value) || 0,
+        kategori: document.getElementById('menu-kategori').value,
+        gambar: document.getElementById('menu-gambar').value,
+        aktif: document.getElementById('menu-aktif').checked
+      };
+      
+      if (!data.nama) {
+        showToast('Nama menu wajib diisi!', 'error');
+        return;
+      }
+      
+      try {
+        const params = new URLSearchParams();
+        if (currentEditRow !== null) {
+          params.append('action', 'updateMenu');
+          params.append('row', currentEditRow);
+        } else {
+          params.append('action', 'addMenu');
+        }
+        
+        Object.keys(data).forEach(key => {
+          params.append(key, data[key]);
+        });
+        
+        await fetch(GAS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: params.toString(),
+          mode: 'no-cors'
+        });
+        
+        showToast(currentEditRow !== null ? 'Menu diperbarui!' : 'Menu ditambahkan!', 'success');
+        closeFormModal();
+        loadMenu();
+      } catch (error) {
+        showToast('Error: ' + error.message, 'error');
+      }
+    }
+    
+    async function submitCustomerForm() {
+      const phone = document.getElementById('cust-phone').value;
+      const data = {
+        phone: phone,
+        nama: document.getElementById('cust-nama').value,
+        alamat: document.getElementById('cust-alamat').value,
+        tipe_diskon: document.getElementById('cust-tipe_diskon').value,
+        nilai_diskon: parseInt(document.getElementById('cust-nilai_diskon').value) || 0
+      };
+      
+      if (!phone) {
+        showToast('WhatsApp wajib diisi!', 'error');
+        return;
+      }
+      
+      try {
+        const params = new URLSearchParams();
+        if (currentEditRow) {
+          params.append('action', 'updateCustomer');
+          params.append('phone', currentEditRow);
+        } else {
+          params.append('action', 'addCustomer');
+        }
+        
+        Object.keys(data).forEach(key => {
+          params.append(key, data[key]);
+        });
+        
+        await fetch(GAS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: params.toString(),
+          mode: 'no-cors'
+        });
+        
+        showToast(currentEditRow ? 'Customer diperbarui!' : 'Customer ditambahkan!', 'success');
+        closeFormModal();
+        loadCustomers();
+      } catch (error) {
+        showToast('Error: ' + error.message, 'error');
+      }
+    }
+    
+    async function submitKnowledgeForm() {
+      const data = {
+        kategori: document.getElementById('knowledge-kategori').value,
+        keywords: document.getElementById('knowledge-keywords').value,
+        jawaban: document.getElementById('knowledge-jawaban').value,
+        contoh_pertanyaan: document.getElementById('knowledge-contoh').value
+      };
+      
+      if (!data.kategori || !data.jawaban) {
+        showToast('Kategori dan jawaban wajib diisi!', 'error');
+        return;
+      }
+      
+      try {
+        const params = new URLSearchParams();
+        params.append('action', 'addCSKnowledge');
+        
+        Object.keys(data).forEach(key => {
+          params.append(key, data[key]);
+        });
+        
+        await fetch(GAS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: params.toString(),
+          mode: 'no-cors'
+        });
+        
+        showToast('Knowledge ditambahkan!', 'success');
+        closeFormModal();
+        loadKnowledge();
+      } catch (error) {
+        showToast('Error: ' + error.message, 'error');
+      }
+    }
+    
+    function closeFormModal() {
+      document.getElementById('form-modal').classList.remove('open');
+      currentFormType = '';
+      currentEditRow = null;
+    }
+    
+    // ========== EXPORT ==========
+    function exportOrders() {
+      let csv = 'Order ID,Waktu,Customer,WA,Alamat,Items,Subtotal,Ongkir,Diskon,Total,Status,Metode\n';
+      
+      allOrders.forEach(order => {
+        const items = JSON.parse(order.items || '[]').map(i => `${i.name}x${i.qty}`).join('; ');
+        csv += `"${order.order_id}","${order.timestamp}","${order.nama}","${order.phone}","${order.alamat}","${items.replace(/"/g, '""')}","${order.subtotal}","${order.shipping_cost}","${order.discount}","${order.total}","${order.status}","${order.payment_method}"\n`;
+      });
+      
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'feisty-orders-' + new Date().toISOString().split('T')[0] + '.csv';
+      a.click();
+      showToast('Export berhasil!', 'success');
+    }
+    
+    // ========== UTILS ==========
+    function formatPrice(price) {
+      return Number(price).toLocaleString('id-ID');
+    }
+    
+    function showToast(msg, type = '') {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.className = 'toast show ' + type;
+      setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+    
+    // Close modals on outside click
+    document.getElementById('order-modal').addEventListener('click', function(e) {
+      if (e.target === this) closeModal();
+    });
+    
+    document.getElementById('form-modal').addEventListener('click', function(e) {
+      if (e.target === this) closeFormModal();
+    });
+  </script>
+</body>
+</html>

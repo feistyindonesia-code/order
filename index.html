@@ -1,75 +1,323 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Food Ordering System</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/style.css">
-</head>
-<body>
-    <div class="container">
-        <header>
-            <h1>Food Order</h1>
-            <div class="user-info">
-                <input type="text" id="nama" placeholder="Nama Anda" required>
-                <input type="text" id="wa" placeholder="Nomor WhatsApp" required>
-            </div>
-        </header>
-
-        <section class="menu-section">
-            <h2>Menu</h2>
-            <div id="menu-container" class="menu-grid">
-                <!-- Menu items will be loaded here -->
-            </div>
-        </section>
-
-        <section class="cart-section">
-            <h2>Keranjang</h2>
-            <div id="cart-items" class="cart-items">
-                <!-- Cart items will be displayed here -->
-            </div>
-            <div class="cart-total">
-                <p>Total: <span id="total-price">Rp 0</span></p>
-            </div>
-        </section>
-
-        <section class="payment-section">
-            <h2>Pembayaran</h2>
-            <div class="payment-methods">
-                <label>
-                    <input type="radio" name="payment" value="COD" checked>
-                    COD (Bayar di Tempat)
-                </label>
-                <label>
-                    <input type="radio" name="payment" value="QRIS">
-                    QRIS
-                </label>
-            </div>
-            <button id="order-btn" class="btn-primary">Pesan Sekarang</button>
-        </section>
-    </div>
-
-    <!-- QRIS Modal -->
-    <div id="qris-modal" class="modal">
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <h2>Scan QRIS untuk Pembayaran</h2>
-            <img id="qris-image" src="" alt="QRIS Code">
-            <p>Total: <span id="modal-total">Rp 0</span></p>
-            <button id="confirm-payment" class="btn-primary">Saya Sudah Bayar</button>
+<!doctype html>
+<html lang="id">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Feisty</title>
+  <style>
+    body {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Arimo', Arial, sans-serif;
+      background: linear-gradient(135deg, #fff8f0 0%, #ffe8d6 100%);
+      min-height: 100vh;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    header {
+      background: linear-gradient(135deg, #FF4500 0%, #DC143C 100%);
+      color: white;
+      padding: 40px 20px;
+      text-align: center;
+      box-shadow: 0 4px 12px rgba(255, 69, 0, 0.2);
+      margin-bottom: 40px;
+      border-radius: 0 0 20px 20px;
+    }
+    
+    header img {
+      height: 120px;
+      width: auto;
+      object-fit: contain;
+      margin-bottom: 20px;
+    }
+    
+    h1 {
+      font-size: 2.5em;
+      margin: 0 0 10px 0;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+    
+    .tagline {
+      font-size: 1.2em;
+      opacity: 0.9;
+      margin: 0;
+    }
+    
+    .hero-section {
+      text-align: center;
+      padding: 60px 20px;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 8px 32px rgba(255, 69, 0, 0.1);
+      margin-bottom: 40px;
+    }
+    
+    .hero-title {
+      font-size: 2.2em;
+      color: #FF4500;
+      margin: 0 0 20px 0;
+    }
+    
+    .hero-description {
+      font-size: 1.1em;
+      color: #666;
+      line-height: 1.6;
+      max-width: 800px;
+      margin: 0 auto 40px auto;
+    }
+    
+    .cta-button {
+      display: inline-block;
+      background: linear-gradient(135deg, #FF4500 0%, #DC143C 100%);
+      color: white;
+      padding: 18px 40px;
+      text-decoration: none;
+      border-radius: 50px;
+      font-size: 1.2em;
+      font-weight: bold;
+      box-shadow: 0 8px 24px rgba(255, 69, 0, 0.3);
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    
+    .cta-button:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 32px rgba(255, 69, 0, 0.4);
+      color: white;
+    }
+    
+    .features-section {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 30px;
+      margin-bottom: 40px;
+    }
+    
+    .feature-card {
+      background: white;
+      padding: 30px;
+      border-radius: 15px;
+      text-align: center;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+      transition: transform 0.3s ease;
+    }
+    
+    .feature-card:hover {
+      transform: translateY(-5px);
+    }
+    
+    .feature-icon {
+      font-size: 3em;
+      margin-bottom: 20px;
+    }
+    
+    .feature-title {
+      font-size: 1.4em;
+      color: #FF4500;
+      margin: 0 0 15px 0;
+    }
+    
+    .feature-description {
+      color: #666;
+      line-height: 1.6;
+      margin: 0;
+    }
+    
+    .info-section {
+      background: white;
+      padding: 40px;
+      border-radius: 20px;
+      box-shadow: 0 8px 32px rgba(255, 69, 0, 0.1);
+      margin-bottom: 40px;
+    }
+    
+    .info-title {
+      font-size: 1.8em;
+      color: #FF4500;
+      margin: 0 0 20px 0;
+      text-align: center;
+    }
+    
+    .info-content {
+      color: #666;
+      line-height: 1.6;
+      text-align: center;
+    }
+    
+    .contact-info {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-top: 30px;
+    }
+    
+    .contact-item {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      padding: 15px;
+      background: #f8f8f8;
+      border-radius: 10px;
+    }
+    
+    .contact-icon {
+      font-size: 1.5em;
+    }
+    
+    .contact-text {
+      color: #333;
+      margin: 0;
+    }
+    
+    footer {
+      background: #333;
+      color: white;
+      text-align: center;
+      padding: 30px 20px;
+      border-radius: 20px 20px 0 0;
+      margin-top: 40px;
+    }
+    
+    .footer-content {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    
+    .footer-text {
+      margin: 0 0 15px 0;
+      opacity: 0.8;
+    }
+    
+    .social-links {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin-top: 20px;
+    }
+    
+    .social-link {
+      color: white;
+      font-size: 1.5em;
+      text-decoration: none;
+      transition: opacity 0.3s ease;
+    }
+    
+    .social-link:hover {
+      opacity: 0.7;
+    }
+    
+    @media (max-width: 768px) {
+      h1 {
+        font-size: 2em;
+      }
+      
+      .hero-title {
+        font-size: 1.8em;
+      }
+      
+      .cta-button {
+        padding: 15px 30px;
+        font-size: 1.1em;
+      }
+      
+      .features-section {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+ </head>
+ <body>
+  <div class="container">
+    <header>
+      <img src="https://imgur.com/E9ya4d5.png" alt="Feisty Logo" loading="lazy" onerror="console.error('Logo failed to load:', this.src); this.style.display='none';">
+      <h1>Feisty</h1>
+      <p class="tagline">Nikmati pengalaman makanan yang memukau</p>
+    </header>
+    
+    <section class="hero-section">
+      <h2 class="hero-title">Selamat Datang di Feisty</h2>
+      <p class="hero-description">
+        Kami menyajikan hidangan lezat dengan bahan-bahan berkualitas tinggi dan resep autentik. 
+        Dari menu klasik hingga inovasi terbaru, setiap hidangan dibuat dengan penuh dedikasi untuk memberikan pengalaman terbaik bagi Anda.
+      </p>
+      <a href="order.html" class="cta-button">PESAN SEKARANG</a>
+    </section>
+    
+    <section class="features-section">
+      <div class="feature-card">
+        <div class="feature-icon">🍕</div>
+        <h3 class="feature-title">Kualitas Terjamin</h3>
+        <p class="feature-description">
+          Bahan-bahan segar dan berkualitas tinggi untuk menghasilkan hidangan yang lezat dan sehat.
+        </p>
+      </div>
+      
+      <div class="feature-card">
+        <div class="feature-icon">⚡</div>
+        <h3 class="feature-title">Pengiriman Cepat</h3>
+        <p class="feature-description">
+          Pengiriman tepat waktu dengan sistem tracking lokasi real-time untuk kenyamanan Anda.
+        </p>
+      </div>
+      
+      <div class="feature-card">
+        <div class="feature-icon">💳</div>
+        <h3 class="feature-title">Pembayaran Aman</h3>
+        <p class="feature-description">
+          Sistem pembayaran yang aman dengan berbagai metode termasuk QRIS dan COD.
+        </p>
+      </div>
+    </section>
+    
+    <section class="info-section">
+      <h2 class="info-title">Tentang Feisty</h2>
+      <div class="info-content">
+        <p>
+          Feisty hadir untuk memberikan pengalaman kuliner yang tak terlupakan. Dengan komitmen pada kualitas dan kepuasan pelanggan, 
+          kami menghadirkan hidangan yang tidak hanya lezat tetapi juga memenuhi standar kesehatan dan kebersihan.
+        </p>
+        
+        <div class="contact-info">
+          <div class="contact-item">
+            <span class="contact-icon">📞</span>
+            <p class="contact-text">Hubungi kami: +62 123 4567 8900</p>
+          </div>
+          
+          <div class="contact-item">
+            <span class="contact-icon">📧</span>
+            <p class="contact-text">Email: info@feisty.com</p>
+          </div>
+          
+          <div class="contact-item">
+            <span class="contact-icon">🕒</span>
+            <p class="contact-text">Jam Operasional: 09:00 - 22:00</p>
+          </div>
+          
+          <div class="contact-item">
+            <span class="contact-icon">📍</span>
+            <p class="contact-text">Lokasi: Jl. Contoh No. 123</p>
+          </div>
         </div>
-    </div>
-
-    <!-- Loading Indicator -->
-    <div id="loading" class="loading">
-        <div class="spinner"></div>
-        <p>Loading...</p>
-    </div>
-
-    <!-- Error Message -->
-    <div id="error-message" class="error-message"></div>
-
-    <script src="assets/js/app.js"></script>
-</body>
+      </div>
+    </section>
+    
+    <footer>
+      <div class="footer-content">
+        <p class="footer-text">© 2024 Feisty. All rights reserved.</p>
+        <div class="social-links">
+          <a href="#" class="social-link">📱</a>
+          <a href="#" class="social-link">📷</a>
+          <a href="#" class="social-link">👥</a>
+        </div>
+      </div>
+    </footer>
+  </div>
+ </body>
 </html>
